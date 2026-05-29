@@ -157,7 +157,6 @@ export default function RegisterPage() {
               [
                 ['NO', "I'm not entering the paid competition"],
                 ['WANTS_TO_PAY', "I want to join — I'll pay soon"],
-                ['HAS_PAID', 'I have already paid'],
               ] as [PaymentStatus, string][]
             ).map(([value, label]) => (
               <label key={value} className="radio-label">
