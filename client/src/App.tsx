@@ -1,14 +1,17 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
+import PredictionsPage from './pages/PredictionsPage';
 import './App.css';
 
-function Dashboard() {
+function Nav() {
   return (
-    <div className="auth-container">
-      <h1>Dashboard</h1>
-      <p>Welcome! Predictions coming soon.</p>
-    </div>
+    <nav className="main-nav">
+      <span className="nav-brand">SPF 2026</span>
+      <div className="nav-links">
+        <Link to="/predictions">Predictions</Link>
+      </div>
+    </nav>
   );
 }
 
@@ -16,10 +19,18 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<Navigate to="/predictions" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route
+          path="/predictions"
+          element={
+            <>
+              <Nav />
+              <PredictionsPage />
+            </>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
