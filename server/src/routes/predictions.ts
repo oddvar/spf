@@ -6,7 +6,7 @@ const router = Router();
 
 router.get('/matches', optionalAuth, async (req: AuthRequest, res: Response) => {
   const [matches] = await pool.execute(
-    'SELECT id, match_number, group_name, home_team, away_team, match_date FROM matches ORDER BY match_number',
+    'SELECT id, match_number, group_name, home_team, away_team, match_date, match_time, location FROM matches ORDER BY match_number',
   );
 
   if (!req.userId) {
@@ -20,7 +20,7 @@ router.get('/matches', optionalAuth, async (req: AuthRequest, res: Response) => 
     predMap.set(p.match_id, p.prediction);
   }
 
-  const result = (matches as Array<{ id: number; match_number: number; group_name: string; home_team: string; away_team: string; match_date: string }>).map((m) => ({
+  const result = (matches as Array<{ id: number; match_number: number; group_name: string; home_team: string; away_team: string; match_date: string; match_time: string | null; location: string | null }>).map((m) => ({
     ...m,
     prediction: predMap.get(m.id) ?? null,
   }));

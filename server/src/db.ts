@@ -42,9 +42,24 @@ export async function initDb(): Promise<void> {
       group_name   CHAR(1)      NOT NULL,
       home_team    VARCHAR(100) NOT NULL,
       away_team    VARCHAR(100) NOT NULL,
-      match_date   DATE         NOT NULL
+      match_date   DATE         NOT NULL,
+      match_time   VARCHAR(5)   NULL,
+      location     VARCHAR(200) NULL
     )
   `);
+
+  // Add columns to existing matches tables that predate this migration
+  for (const col of ['match_time VARCHAR(5) NULL', 'location VARCHAR(200) NULL'] as const) {
+    const colName = col.split(' ')[0];
+    const [colRows] = await pool.execute(
+      `SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'matches' AND COLUMN_NAME = ?`,
+      [colName],
+    );
+    if ((colRows as unknown[]).length === 0) {
+      await pool.execute(`ALTER TABLE matches ADD COLUMN ${col}`);
+    }
+  }
 
   await pool.execute(`
     CREATE TABLE IF NOT EXISTS predictions (

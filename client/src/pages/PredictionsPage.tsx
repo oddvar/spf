@@ -11,6 +11,8 @@ interface Match {
   home_team: string;
   away_team: string;
   match_date: string;
+  match_time: string | null;
+  location: string | null;
   prediction: Prediction | null;
 }
 
@@ -94,15 +96,23 @@ export default function PredictionsPage() {
           <div className="match-list">
             {items.map((match) => (
               <div key={match.id} className="match-row">
-                {sortMode === 'group' ? (
-                  <span className="match-date">{formatDate(match.match_date)}</span>
-                ) : (
-                  <span className="match-date">Group {match.group_name}</span>
-                )}
+                <div className="match-meta">
+                  {sortMode === 'group' ? (
+                    <span className="match-date">{formatDate(match.match_date)}</span>
+                  ) : (
+                    <span className="match-date">Group {match.group_name}</span>
+                  )}
+                  {match.match_time && (
+                    <span className="match-time">{formatTime(match.match_time)}</span>
+                  )}
+                </div>
                 <div className="match-teams">
                   <span className="team home">{match.home_team}</span>
                   <span className="vs">vs</span>
                   <span className="team away">{match.away_team}</span>
+                  {match.location && (
+                    <span className="match-location">{match.location}</span>
+                  )}
                 </div>
                 <div className="prediction-btns" aria-label={`Prediction for ${match.home_team} vs ${match.away_team}`}>
                   {(['H', 'D', 'A'] as Prediction[]).map((p) => (
@@ -145,9 +155,16 @@ function groupBy(
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 }
 
 function formatDateHeading(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  return new Date(dateStr).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+}
+
+function formatTime(time: string): string {
+  const [h, m] = time.split(':').map(Number);
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${suffix} EDT`;
 }

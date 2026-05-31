@@ -114,24 +114,38 @@
 
 .match-row {
   display: grid;
-  grid-template-columns: 68px 1fr auto;
+  grid-template-columns: 80px 1fr auto;
   align-items: center;
   gap: 12px;
-  padding: 8px 0;
+  padding: 9px 0;
   border-bottom: 1px solid var(--border);
+}
+
+.match-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .match-date {
   font-size: 12px;
+  color: var(--text-h);
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.match-time {
+  font-size: 11px;
   color: var(--text);
   white-space: nowrap;
 }
 
 .match-teams {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: baseline;
+  gap: 6px;
   font-size: 14px;
+  flex-wrap: wrap;
   overflow: hidden;
 }
 
@@ -139,14 +153,21 @@
   font-weight: 500;
   color: var(--text-h);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .vs {
   color: var(--text);
   font-size: 12px;
   flex-shrink: 0;
+}
+
+.match-location {
+  font-size: 11px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-basis: 100%;
 }
 
 .prediction-btns {
@@ -191,8 +212,11 @@
 
 @media (max-width: 540px) {
   .match-row {
-    grid-template-columns: 44px 1fr auto;
+    grid-template-columns: 64px 1fr auto;
     gap: 8px;
+  }
+  .match-location {
+    display: none;
   }
 }
 
