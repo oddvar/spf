@@ -4,13 +4,29 @@ import { requireAuth, optionalAuth, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
 
+type MatchRow = {
+  id: number;
+  match_number: number;
+  group_name: string;
+  home_team: string;
+  away_team: string;
+  match_datetime: string;
+  location: string | null;
+};
+
 router.get('/matches', optionalAuth, async (req: AuthRequest, res: Response) => {
   const [matches] = await pool.execute(
-    'SELECT id, match_number, group_name, home_team, away_team, match_date, match_time, location FROM matches ORDER BY match_number',
+    'SELECT id, match_number, group_name, home_team, away_team, match_datetime, location FROM matches ORDER BY match_datetime',
   );
 
+  // dateStrings: true returns DATETIME as "YYYY-MM-DD HH:MM:SS" — append Z to mark as UTC
+  const normalise = (m: MatchRow) => ({
+    ...m,
+    match_datetime: (m.match_datetime as string).replace(' ', 'T') + 'Z',
+  });
+
   if (!req.userId) {
-    res.json(matches);
+    res.json((matches as MatchRow[]).map(normalise));
     return;
   }
 
@@ -20,12 +36,12 @@ router.get('/matches', optionalAuth, async (req: AuthRequest, res: Response) => 
     predMap.set(p.match_id, p.prediction);
   }
 
-  const result = (matches as Array<{ id: number; match_number: number; group_name: string; home_team: string; away_team: string; match_date: string; match_time: string | null; location: string | null }>).map((m) => ({
-    ...m,
-    prediction: predMap.get(m.id) ?? null,
-  }));
-
-  res.json(result);
+  res.json(
+    (matches as MatchRow[]).map((m) => ({
+      ...normalise(m),
+      prediction: predMap.get(m.id) ?? null,
+    })),
+  );
 });
 
 router.put('/predictions/:matchId', requireAuth, async (req: AuthRequest, res: Response) => {

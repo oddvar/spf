@@ -9,7 +9,17 @@ export const pool = mysql.createPool({
   database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
+  dateStrings: true,
 });
+
+async function columnExists(table: string, column: string): Promise<boolean> {
+  const [rows] = await pool.execute(
+    `SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+    [table, column],
+  );
+  return (rows as unknown[]).length > 0;
+}
 
 export async function initDb(): Promise<void> {
   await pool.execute(`
@@ -26,39 +36,46 @@ export async function initDb(): Promise<void> {
     )
   `);
 
-  // Add active column to existing tables that predate this migration
-  const [activeRows] = await pool.execute(
-    `SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
-     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'active'`,
-  );
-  if ((activeRows as unknown[]).length === 0) {
+  if (!(await columnExists('users', 'active'))) {
     await pool.execute(`ALTER TABLE users ADD COLUMN active TINYINT(1) NOT NULL DEFAULT 1`);
   }
 
   await pool.execute(`
     CREATE TABLE IF NOT EXISTS matches (
-      id           INT          PRIMARY KEY AUTO_INCREMENT,
-      match_number INT          NOT NULL,
-      group_name   CHAR(1)      NOT NULL,
-      home_team    VARCHAR(100) NOT NULL,
-      away_team    VARCHAR(100) NOT NULL,
-      match_date   DATE         NOT NULL,
-      match_time   VARCHAR(5)   NULL,
-      location     VARCHAR(200) NULL
+      id             INT          PRIMARY KEY AUTO_INCREMENT,
+      match_number   INT          NOT NULL,
+      group_name     CHAR(1)      NOT NULL,
+      home_team      VARCHAR(100) NOT NULL,
+      away_team      VARCHAR(100) NOT NULL,
+      match_datetime DATETIME     NOT NULL,
+      location       VARCHAR(200) NULL
     )
   `);
 
-  // Add columns to existing matches tables that predate this migration
-  for (const col of ['match_time VARCHAR(5) NULL', 'location VARCHAR(200) NULL'] as const) {
-    const colName = col.split(' ')[0];
-    const [colRows] = await pool.execute(
-      `SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
-       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'matches' AND COLUMN_NAME = ?`,
-      [colName],
-    );
-    if ((colRows as unknown[]).length === 0) {
-      await pool.execute(`ALTER TABLE matches ADD COLUMN ${col}`);
-    }
+  // Migrate: add match_datetime from old separate date+time columns (EDT → UTC)
+  if (!(await columnExists('matches', 'match_datetime'))) {
+    await pool.execute(`ALTER TABLE matches ADD COLUMN match_datetime DATETIME NULL`);
+  }
+  // Populate from old columns only if they still exist (they may already be dropped)
+  if (await columnExists('matches', 'match_date')) {
+    await pool.execute(`
+      UPDATE matches
+      SET match_datetime = DATE_ADD(
+        CONCAT(match_date, ' ', IFNULL(match_time, '00:00'), ':00'),
+        INTERVAL 4 HOUR
+      )
+      WHERE match_datetime IS NULL
+    `);
+    await pool.execute(`ALTER TABLE matches DROP COLUMN match_date`);
+  }
+  if (await columnExists('matches', 'match_time')) {
+    await pool.execute(`ALTER TABLE matches DROP COLUMN match_time`);
+  }
+  // Remaining null datetimes (old columns already gone) are backfilled by the seed
+
+  // Add location column for tables that predate it
+  if (!(await columnExists('matches', 'location'))) {
+    await pool.execute(`ALTER TABLE matches ADD COLUMN location VARCHAR(200) NULL`);
   }
 
   await pool.execute(`

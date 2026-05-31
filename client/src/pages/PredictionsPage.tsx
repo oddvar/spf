@@ -10,13 +10,13 @@ interface Match {
   group_name: string;
   home_team: string;
   away_team: string;
-  match_date: string;
-  match_time: string | null;
+  match_datetime: string; // UTC ISO 8601
   location: string | null;
   prediction: Prediction | null;
 }
 
 const LABELS: Record<Prediction, string> = { H: 'Home', D: 'Draw', A: 'Away' };
+
 
 export default function PredictionsPage() {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -62,8 +62,18 @@ export default function PredictionsPage() {
 
   const sections =
     sortMode === 'group'
-      ? groupBy(matches, (m) => m.group_name, (k) => `Group ${k}`, (a, b) => a.match_number - b.match_number)
-      : groupBy(matches, (m) => m.match_date.slice(0, 10), formatDateHeading, (a, b) => a.match_number - b.match_number);
+      ? groupBy(
+          matches,
+          (m) => m.group_name,
+          (k) => `Group ${k}`,
+          (a, b) => a.match_number - b.match_number,
+        )
+      : groupBy(
+          matches,
+          (m) => localDateKey(m.match_datetime),
+          (key) => localDateHeading(key),
+          (a, b) => new Date(a.match_datetime).getTime() - new Date(b.match_datetime).getTime(),
+        );
 
   return (
     <div className="predictions-page">
@@ -98,13 +108,11 @@ export default function PredictionsPage() {
               <div key={match.id} className="match-row">
                 <div className="match-meta">
                   {sortMode === 'group' ? (
-                    <span className="match-date">{formatDate(match.match_date)}</span>
+                    <span className="match-date">{formatDate(match.match_datetime)}</span>
                   ) : (
                     <span className="match-date">Group {match.group_name}</span>
                   )}
-                  {match.match_time && (
-                    <span className="match-time">{formatTime(match.match_time)}</span>
-                  )}
+                  <span className="match-time">{formatTime(match.match_datetime)}</span>
                 </div>
                 <div className="match-teams">
                   <span className="team home">{match.home_team}</span>
@@ -154,17 +162,24 @@ function groupBy(
     .map(([key, items]) => ({ key, heading: headingFn(key), items: [...items].sort(sortFn) }));
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+// Returns "YYYY-MM-DD" in the user's local timezone
+function localDateKey(isoUtc: string): string {
+  return new Date(isoUtc).toLocaleDateString('en-CA');
 }
 
-function formatDateHeading(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+function localDateHeading(key: string): string {
+  // Parse as local noon to avoid any DST edge cases at midnight
+  return new Date(`${key}T12:00:00`).toLocaleDateString('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long',
+  });
 }
 
-function formatTime(time: string): string {
-  const [h, m] = time.split(':').map(Number);
-  const suffix = h >= 12 ? 'PM' : 'AM';
-  const h12 = h % 12 || 12;
-  return `${h12}:${String(m).padStart(2, '0')} ${suffix} EDT`;
+// Date shown in the left column (by group mode) — user's local timezone
+function formatDate(isoUtc: string): string {
+  return new Date(isoUtc).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+// Kickoff time in the user's detected timezone
+function formatTime(isoUtc: string): string {
+  return new Date(isoUtc).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
 }

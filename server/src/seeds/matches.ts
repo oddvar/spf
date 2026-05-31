@@ -1,6 +1,15 @@
 import { pool } from '../db.js';
 
-// Times are UTC-4 (US EDT). Locations are venue, city.
+// Convert a date ("YYYY-MM-DD") and EDT time ("HH:MM") to a UTC datetime string
+// for MySQL DATETIME storage ("YYYY-MM-DD HH:MM:SS").
+function toUtcDatetime(date: string, edtTime: string): string {
+  return new Date(`${date}T${edtTime}:00-04:00`)
+    .toISOString()
+    .replace('T', ' ')
+    .replace(/\.\d{3}Z$/, '');
+}
+
+// All times are in EDT (UTC-4). Locations are venue, city.
 const MATCHES = [
   // Group A
   { n: 1,  g: 'A', home: 'Mexico',       away: 'South Africa',          date: '2026-06-11', time: '15:00', location: 'Estadio Azteca, Mexico City' },
@@ -95,24 +104,35 @@ export async function seedMatches(): Promise<void> {
   if (count === 0) {
     for (const m of MATCHES) {
       await pool.execute(
-        'INSERT INTO matches (match_number, group_name, home_team, away_team, match_date, match_time, location) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [m.n, m.g, m.home, m.away, m.date, m.time, m.location],
+        'INSERT INTO matches (match_number, group_name, home_team, away_team, match_datetime, location) VALUES (?, ?, ?, ?, ?, ?)',
+        [m.n, m.g, m.home, m.away, toUtcDatetime(m.date, m.time), m.location],
       );
     }
     console.log('Seeded 72 group stage matches');
     return;
   }
 
-  // Backfill time/location for rows that predate this migration
-  const [nullRows] = await pool.execute('SELECT COUNT(*) as count FROM matches WHERE match_time IS NULL');
-  const nullCount = (nullRows as Array<{ count: number }>)[0].count;
-  if (nullCount > 0) {
+  // Backfill match_datetime if null (migration ran before old columns were populated)
+  const [nullDtRows] = await pool.execute('SELECT COUNT(*) as count FROM matches WHERE match_datetime IS NULL');
+  if ((nullDtRows as Array<{ count: number }>)[0].count > 0) {
     for (const m of MATCHES) {
       await pool.execute(
-        'UPDATE matches SET match_time = ?, location = ? WHERE match_number = ?',
-        [m.time, m.location, m.n],
+        'UPDATE matches SET match_datetime = ? WHERE match_number = ? AND match_datetime IS NULL',
+        [toUtcDatetime(m.date, m.time), m.n],
       );
     }
-    console.log('Backfilled match times and locations');
+    console.log('Backfilled match datetimes');
+  }
+
+  // Backfill location for rows that predate this column
+  const [nullLocRows] = await pool.execute('SELECT COUNT(*) as count FROM matches WHERE location IS NULL');
+  if ((nullLocRows as Array<{ count: number }>)[0].count > 0) {
+    for (const m of MATCHES) {
+      await pool.execute(
+        'UPDATE matches SET location = ? WHERE match_number = ? AND location IS NULL',
+        [m.location, m.n],
+      );
+    }
+    console.log('Backfilled match locations');
   }
 }
