@@ -1,8 +1,11 @@
 import { Router, Response } from 'express';
-import { pool } from '../db.js';
+import { pool, MATCH_COUNT } from '../db.js';
 import { requireAuth, optionalAuth, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
+
+// Column list used when reading predictions from the users table
+const PRED_COLS = Array.from({ length: MATCH_COUNT }, (_, i) => `match${i + 1}`).join(', ');
 
 type MatchRow = {
   id: number;
@@ -19,7 +22,6 @@ router.get('/matches', optionalAuth, async (req: AuthRequest, res: Response) => 
     'SELECT id, match_number, group_name, home_team, away_team, match_datetime, location FROM matches ORDER BY match_datetime',
   );
 
-  // dateStrings: true returns DATETIME as "YYYY-MM-DD HH:MM:SS" — append Z to mark as UTC
   const normalise = (m: MatchRow) => ({
     ...m,
     match_datetime: (m.match_datetime as string).replace(' ', 'T') + 'Z',
@@ -30,16 +32,16 @@ router.get('/matches', optionalAuth, async (req: AuthRequest, res: Response) => 
     return;
   }
 
-  const [preds] = await pool.execute('SELECT match_id, prediction FROM predictions WHERE user_id = ?', [req.userId]);
-  const predMap = new Map<number, string>();
-  for (const p of preds as Array<{ match_id: number; prediction: string }>) {
-    predMap.set(p.match_id, p.prediction);
-  }
+  const [userRows] = await pool.execute(
+    `SELECT ${PRED_COLS} FROM users WHERE id = ?`,
+    [req.userId],
+  );
+  const preds = (userRows as Record<string, string | null>[])[0] ?? {};
 
   res.json(
     (matches as MatchRow[]).map((m) => ({
       ...normalise(m),
-      prediction: predMap.get(m.id) ?? null,
+      prediction: preds[`match${m.match_number}`] ?? null,
     })),
   );
 });
@@ -53,17 +55,16 @@ router.put('/predictions/:matchId', requireAuth, async (req: AuthRequest, res: R
     return;
   }
 
-  const [rows] = await pool.execute('SELECT id FROM matches WHERE id = ?', [matchId]);
+  const [rows] = await pool.execute('SELECT match_number FROM matches WHERE id = ?', [matchId]);
   if ((rows as unknown[]).length === 0) {
     res.status(404).json({ error: 'Match not found' });
     return;
   }
+  const { match_number } = (rows as Array<{ match_number: number }>)[0];
 
   await pool.execute(
-    `INSERT INTO predictions (user_id, match_id, prediction)
-     VALUES (?, ?, ?)
-     ON DUPLICATE KEY UPDATE prediction = VALUES(prediction), updated_at = CURRENT_TIMESTAMP`,
-    [req.userId, matchId, prediction],
+    `UPDATE users SET match${match_number} = ? WHERE id = ?`,
+    [prediction, req.userId],
   );
 
   res.json({ matchId, prediction });

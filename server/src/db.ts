@@ -1,6 +1,8 @@
 import mysql from 'mysql2/promise';
 import 'dotenv/config';
 
+export const MATCH_COUNT = 72;
+
 export const pool = mysql.createPool({
   host: process.env.DB_HOST ?? 'localhost',
   port: Number(process.env.DB_PORT ?? 3306),
@@ -40,6 +42,35 @@ export async function initDb(): Promise<void> {
     await pool.execute(`ALTER TABLE users ADD COLUMN active TINYINT(1) NOT NULL DEFAULT 1`);
   }
 
+  // Add match prediction columns (match1…match72) if not present
+  if (!(await columnExists('users', 'match1'))) {
+    const cols = Array.from(
+      { length: MATCH_COUNT },
+      (_, i) => `ADD COLUMN match${i + 1} ENUM('H', 'D', 'A') NULL`,
+    ).join(', ');
+    await pool.execute(`ALTER TABLE users ${cols}`);
+  }
+
+  // Migrate any existing data from the old predictions table, then drop it
+  const [tableRows] = await pool.execute(
+    `SELECT 1 FROM INFORMATION_SCHEMA.TABLES
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'predictions'`,
+  );
+  if ((tableRows as unknown[]).length > 0) {
+    // Copy predictions into the users columns
+    const [preds] = await pool.execute(
+      `SELECT p.user_id, m.match_number, p.prediction
+       FROM predictions p JOIN matches m ON m.id = p.match_id`,
+    );
+    for (const row of preds as Array<{ user_id: string; match_number: number; prediction: string }>) {
+      await pool.execute(
+        `UPDATE users SET match${row.match_number} = ? WHERE id = ?`,
+        [row.prediction, row.user_id],
+      );
+    }
+    await pool.execute(`DROP TABLE predictions`);
+  }
+
   await pool.execute(`
     CREATE TABLE IF NOT EXISTS matches (
       id             INT          PRIMARY KEY AUTO_INCREMENT,
@@ -52,11 +83,9 @@ export async function initDb(): Promise<void> {
     )
   `);
 
-  // Migrate: add match_datetime from old separate date+time columns (EDT → UTC)
   if (!(await columnExists('matches', 'match_datetime'))) {
     await pool.execute(`ALTER TABLE matches ADD COLUMN match_datetime DATETIME NULL`);
   }
-  // Populate from old columns only if they still exist (they may already be dropped)
   if (await columnExists('matches', 'match_date')) {
     await pool.execute(`
       UPDATE matches
@@ -71,23 +100,7 @@ export async function initDb(): Promise<void> {
   if (await columnExists('matches', 'match_time')) {
     await pool.execute(`ALTER TABLE matches DROP COLUMN match_time`);
   }
-  // Remaining null datetimes (old columns already gone) are backfilled by the seed
-
-  // Add location column for tables that predate it
   if (!(await columnExists('matches', 'location'))) {
     await pool.execute(`ALTER TABLE matches ADD COLUMN location VARCHAR(200) NULL`);
   }
-
-  await pool.execute(`
-    CREATE TABLE IF NOT EXISTS predictions (
-      user_id    CHAR(36)             NOT NULL,
-      match_id   INT                  NOT NULL,
-      prediction ENUM('H', 'D', 'A') NOT NULL,
-      created_at TIMESTAMP            DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP            DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      PRIMARY KEY (user_id, match_id),
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-      FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE
-    )
-  `);
 }
