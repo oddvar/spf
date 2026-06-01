@@ -1,54 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { get, put } from '../api/client';
+import { calcStandings, type GroupMatch } from '../utils/standings';
 
 const GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'] as const;
 const REQUIRED = 8;
 
-type Prediction = 'H' | 'D' | 'A';
-
-interface Match {
+interface Match extends GroupMatch {
   id: number;
   match_number: number;
-  group_name: string;
-  home_team: string;
-  away_team: string;
   match_datetime: string;
-  prediction: Prediction | null;
-}
-
-interface Standing {
-  team: string;
-  played: number;
-  won: number;
-  drawn: number;
-  lost: number;
-  points: number;
-}
-
-function calcStandings(matches: Match[], group: string): Standing[] {
-  const groupMatches = matches.filter((m) => m.group_name === group);
-  const table = new Map<string, Standing>();
-
-  for (const m of groupMatches) {
-    for (const team of [m.home_team, m.away_team]) {
-      if (!table.has(team)) table.set(team, { team, played: 0, won: 0, drawn: 0, lost: 0, points: 0 });
-    }
-    if (!m.prediction) continue;
-    const home = table.get(m.home_team)!;
-    const away = table.get(m.away_team)!;
-    home.played++;
-    away.played++;
-    if (m.prediction === 'H') {
-      home.won++; home.points += 3; away.lost++;
-    } else if (m.prediction === 'D') {
-      home.drawn++; home.points++; away.drawn++; away.points++;
-    } else {
-      away.won++; away.points += 3; home.lost++;
-    }
-  }
-
-  return Array.from(table.values()).sort((a, b) => b.points - a.points || b.won - a.won);
 }
 
 export default function BestThirdsPage() {
@@ -118,7 +79,7 @@ export default function BestThirdsPage() {
           <button className="btn-secondary" onClick={() => navigate('/predictions')}>
             Previous
           </button>
-          <button className="btn-primary" disabled={!allDone} onClick={() => navigate('/dashboard')}>
+          <button className="btn-primary" disabled={!allDone} onClick={() => navigate('/knockout')}>
             Next
           </button>
         </div>

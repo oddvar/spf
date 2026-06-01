@@ -3,6 +3,7 @@ import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
 import PredictionsPage from './pages/PredictionsPage';
 import BestThirdsPage from './pages/BestThirdsPage';
+import KnockoutPage from './pages/KnockoutPage';
 import './App.css';
 
 function isLoggedIn(): boolean {
@@ -47,6 +48,15 @@ export default function App() {
             <ProtectedRoute>
               <Nav />
               <BestThirdsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/knockout"
+          element={
+            <ProtectedRoute>
+              <Nav />
+              <KnockoutPage />
             </ProtectedRoute>
           }
         />

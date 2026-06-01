@@ -32,7 +32,7 @@
 
 /* Predictions */
 .predictions-page {
-  max-width: 760px;
+  max-width: 960px;
   margin: 0 auto;
   padding: 32px 20px 60px;
 }
@@ -245,6 +245,65 @@
 
 .predictions-page .form-error {
   margin-bottom: 10px;
+}
+
+/* Bracket */
+.bracket-box {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.bracket-team {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-h);
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+  user-select: none;
+}
+
+.bracket-team:last-child {
+  border-bottom: none;
+}
+
+.bracket-team--clickable {
+  cursor: pointer;
+}
+
+.bracket-team--clickable:hover {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.bracket-team--winner {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.bracket-team--winner.bracket-team--clickable:hover {
+  background: var(--accent);
+  opacity: 0.88;
+  color: #fff;
+}
+
+.bracket-team-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.bracket-check {
+  flex-shrink: 0;
+  margin-left: 4px;
+  font-size: 10px;
 }
 
 /* Best thirds */

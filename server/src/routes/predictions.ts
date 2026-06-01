@@ -19,7 +19,7 @@ type MatchRow = {
 
 router.get('/matches', optionalAuth, async (req: AuthRequest, res: Response) => {
   const [matches] = await pool.execute(
-    'SELECT id, match_number, group_name, home_team, away_team, match_datetime, location FROM matches ORDER BY match_datetime',
+    'SELECT id, match_number, group_name, home_team, away_team, match_datetime, location FROM matches WHERE stage IS NULL ORDER BY match_datetime',
   );
 
   const normalise = (m: MatchRow) => ({

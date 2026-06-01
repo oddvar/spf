@@ -136,3 +136,36 @@ export async function seedMatches(): Promise<void> {
     console.log('Backfilled match locations');
   }
 }
+
+const KO_MATCHES = [
+  { n: 1,  home: '2A',      away: '2B',      date: '2026-06-28', time: '15:00', location: 'SoFi Stadium, Inglewood' },
+  { n: 2,  home: '1C',      away: '2F',      date: '2026-06-29', time: '13:00', location: 'NRG Stadium, Houston' },
+  { n: 3,  home: '1E',      away: '3ABCDF',  date: '2026-06-29', time: '16:30', location: 'Gillette Stadium, Foxborough' },
+  { n: 4,  home: '1F',      away: '2C',      date: '2026-06-29', time: '21:00', location: 'Estadio BBVA, Guadalupe' },
+  { n: 5,  home: '2E',      away: '2I',      date: '2026-06-30', time: '14:00', location: 'AT&T Stadium, Arlington' },
+  { n: 6,  home: '1I',      away: '3CDFGH',  date: '2026-06-30', time: '17:00', location: 'MetLife Stadium, East Rutherford' },
+  { n: 7,  home: '1A',      away: '3CEFHI',  date: '2026-06-30', time: '21:00', location: 'Estadio Azteca, Mexico City' },
+  { n: 8,  home: '1L',      away: '3EHIJK',  date: '2026-07-01', time: '12:00', location: 'Mercedes-Benz Stadium, Atlanta' },
+  { n: 9,  home: '1G',      away: '3AEHIJ',  date: '2026-07-01', time: '16:00', location: 'Lumen Field, Seattle' },
+  { n: 10, home: '1D',      away: '3BEFIJ',  date: '2026-07-01', time: '20:00', location: "Levi's Stadium, Santa Clara" },
+  { n: 11, home: '1H',      away: '2J',      date: '2026-07-02', time: '15:00', location: 'SoFi Stadium, Inglewood' },
+  { n: 12, home: '2K',      away: '2L',      date: '2026-07-02', time: '19:00', location: 'BMO Field, Toronto' },
+  { n: 13, home: '2B',      away: '3EFGIJ',  date: '2026-07-02', time: '23:00', location: 'BC Place, Vancouver' },
+  { n: 14, home: '2D',      away: '2G',      date: '2026-07-03', time: '14:00', location: 'AT&T Stadium, Arlington' },
+  { n: 15, home: '1J',      away: '2H',      date: '2026-07-03', time: '18:00', location: 'Hard Rock Stadium, Miami Gardens' },
+  { n: 16, home: '1K',      away: '3DEIJL',  date: '2026-07-03', time: '21:30', location: 'Arrowhead Stadium, Kansas City' },
+];
+
+export async function seedKnockoutMatches(): Promise<void> {
+  const [rows] = await pool.execute(`SELECT COUNT(*) as count FROM matches WHERE stage = 'r32'`);
+  if ((rows as Array<{ count: number }>)[0].count > 0) return;
+
+  for (const m of KO_MATCHES) {
+    await pool.execute(
+      `INSERT INTO matches (home_team, away_team, match_datetime, location, stage, ko_number)
+       VALUES (?, ?, ?, ?, 'r32', ?)`,
+      [m.home, m.away, toUtcDatetime(m.date, m.time), m.location, m.n],
+    );
+  }
+  console.log('Seeded 16 Round of 32 matches');
+}

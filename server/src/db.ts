@@ -2,6 +2,7 @@ import mysql from 'mysql2/promise';
 import 'dotenv/config';
 
 export const MATCH_COUNT = 72;
+export const KO_MATCH_COUNT = 16;
 
 export const pool = mysql.createPool({
   host: process.env.DB_HOST ?? 'localhost',
@@ -52,7 +53,7 @@ export async function initDb(): Promise<void> {
     await pool.execute(`ALTER TABLE users ADD COLUMN can_view_others TINYINT(1) NOT NULL DEFAULT 0`);
   }
 
-  // Add best-thirds prediction columns (best_third_a…best_third_l) if not present
+  // Add best-thirds prediction columns (best_third_a…best_third_l)
   if (!(await columnExists('users', 'best_third_a'))) {
     const cols = ['A','B','C','D','E','F','G','H','I','J','K','L']
       .map((g) => `ADD COLUMN best_third_${g.toLowerCase()} TINYINT(1) NULL`)
@@ -60,11 +61,20 @@ export async function initDb(): Promise<void> {
     await pool.execute(`ALTER TABLE users ${cols}`);
   }
 
-  // Add match prediction columns (match1…match72) if not present
+  // Add group stage prediction columns (match1…match72)
   if (!(await columnExists('users', 'match1'))) {
     const cols = Array.from(
       { length: MATCH_COUNT },
       (_, i) => `ADD COLUMN match${i + 1} ENUM('H', 'D', 'A') NULL`,
+    ).join(', ');
+    await pool.execute(`ALTER TABLE users ${cols}`);
+  }
+
+  // Add knockout prediction columns (ko1…ko16)
+  if (!(await columnExists('users', 'ko1'))) {
+    const cols = Array.from(
+      { length: KO_MATCH_COUNT },
+      (_, i) => `ADD COLUMN ko${i + 1} ENUM('H', 'A') NULL`,
     ).join(', ');
     await pool.execute(`ALTER TABLE users ${cols}`);
   }
@@ -75,7 +85,6 @@ export async function initDb(): Promise<void> {
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'predictions'`,
   );
   if ((tableRows as unknown[]).length > 0) {
-    // Copy predictions into the users columns
     const [preds] = await pool.execute(
       `SELECT p.user_id, m.match_number, p.prediction
        FROM predictions p JOIN matches m ON m.id = p.match_id`,
@@ -92,12 +101,14 @@ export async function initDb(): Promise<void> {
   await pool.execute(`
     CREATE TABLE IF NOT EXISTS matches (
       id             INT          PRIMARY KEY AUTO_INCREMENT,
-      match_number   INT          NOT NULL,
-      group_name     CHAR(1)      NOT NULL,
+      match_number   INT          NULL,
+      group_name     CHAR(1)      NULL,
       home_team      VARCHAR(100) NOT NULL,
       away_team      VARCHAR(100) NOT NULL,
       match_datetime DATETIME     NOT NULL,
-      location       VARCHAR(200) NULL
+      location       VARCHAR(200) NULL,
+      stage          VARCHAR(20)  NULL,
+      ko_number      INT          NULL
     )
   `);
 
@@ -120,5 +131,26 @@ export async function initDb(): Promise<void> {
   }
   if (!(await columnExists('matches', 'location'))) {
     await pool.execute(`ALTER TABLE matches ADD COLUMN location VARCHAR(200) NULL`);
+  }
+  if (!(await columnExists('matches', 'stage'))) {
+    await pool.execute(`ALTER TABLE matches ADD COLUMN stage VARCHAR(20) NULL`);
+  }
+  if (!(await columnExists('matches', 'ko_number'))) {
+    await pool.execute(`ALTER TABLE matches ADD COLUMN ko_number INT NULL`);
+  }
+  // Make match_number and group_name nullable so knockout rows (which have neither) can be inserted
+  const [mnRows] = await pool.execute(
+    `SELECT IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'matches' AND COLUMN_NAME = 'match_number'`,
+  );
+  if ((mnRows as Array<{ IS_NULLABLE: string }>)[0]?.IS_NULLABLE === 'NO') {
+    await pool.execute(`ALTER TABLE matches MODIFY COLUMN match_number INT NULL`);
+  }
+  const [gnRows] = await pool.execute(
+    `SELECT IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'matches' AND COLUMN_NAME = 'group_name'`,
+  );
+  if ((gnRows as Array<{ IS_NULLABLE: string }>)[0]?.IS_NULLABLE === 'NO') {
+    await pool.execute(`ALTER TABLE matches MODIFY COLUMN group_name CHAR(1) NULL`);
   }
 }
