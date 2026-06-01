@@ -89,6 +89,12 @@ export default function BestThirdsPage() {
   const count = selections.size;
   const allDone = count === REQUIRED;
 
+  // Determine which groups' 3rd-place teams are eligible (top 8 by points)
+  const thirdPoints = new Map(GROUPS.map((g) => [g, calcStandings(matches, g)[2]?.points ?? 0]));
+  const sortedThirdPoints = Array.from(thirdPoints.values()).sort((a, b) => b - a);
+  const threshold = sortedThirdPoints[REQUIRED - 1] ?? 0;
+  const eligibleGroups = new Set(GROUPS.filter((g) => (thirdPoints.get(g) ?? 0) >= threshold));
+
   if (loading) return <div className="predictions-loading">Loading…</div>;
 
   return (
@@ -104,8 +110,14 @@ export default function BestThirdsPage() {
             Click a third-place row to select it.
           </p>
         </div>
-        <div className="predictions-progress" style={{ border: 'none', padding: '0', marginBottom: '0' }}>
-          <span className="predictions-count">{count} / {REQUIRED} selected</span>
+      </div>
+
+      <div className="predictions-progress">
+        <span className="predictions-count">{count} / {REQUIRED} selected</span>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn-secondary" onClick={() => navigate('/predictions')}>
+            Previous
+          </button>
           <button className="btn-primary" disabled={!allDone} onClick={() => navigate('/dashboard')}>
             Next
           </button>
@@ -116,6 +128,7 @@ export default function BestThirdsPage() {
         {GROUPS.map((group) => {
           const standings = calcStandings(matches, group);
           const selected = selections.has(group);
+          const eligible = eligibleGroups.has(group);
           const maxReached = !selected && count >= REQUIRED;
           return (
             <div key={group} className="group-standing">
@@ -139,11 +152,13 @@ export default function BestThirdsPage() {
                         key={s.team}
                         className={
                           isThird
-                            ? `third-row${selected ? ' third-row--selected' : ''}${maxReached ? ' third-row--disabled' : ''}`
+                            ? eligible
+                              ? `third-row${selected ? ' third-row--selected' : ''}${maxReached ? ' third-row--disabled' : ''}`
+                              : 'non-qualifier-row'
                             : i < 2 ? 'qualifier-row' : 'non-qualifier-row'
                         }
-                        onClick={isThird && !maxReached && !saving ? () => toggle(group) : undefined}
-                        style={isThird && !maxReached ? { cursor: 'pointer' } : undefined}
+                        onClick={isThird && eligible && !maxReached && !saving ? () => toggle(group) : undefined}
+                        style={isThird && eligible && !maxReached ? { cursor: 'pointer' } : undefined}
                       >
                         <td className="st-pos">{i + 1}</td>
                         <td className="st-team">{s.team}</td>

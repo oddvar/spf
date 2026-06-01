@@ -71,8 +71,11 @@ router.put('/predictions/:matchId', requireAuth, async (req: AuthRequest, res: R
   }
   const { match_number } = (rows as Array<{ match_number: number }>)[0];
 
+  const clearBestThirds = ['a','b','c','d','e','f','g','h','i','j','k','l']
+    .map((g) => `best_third_${g} = NULL`).join(', ');
+
   await pool.execute(
-    `UPDATE users SET match${match_number} = ? WHERE id = ?`,
+    `UPDATE users SET match${match_number} = ?, ${clearBestThirds} WHERE id = ?`,
     [prediction, req.userId],
   );
 
