@@ -1,4 +1,5 @@
 import { useState, useEffect, useTransition } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { get, put, ApiError } from '../api/client';
 
 type Prediction = 'H' | 'D' | 'A';
@@ -19,6 +20,7 @@ const LABELS: Record<Prediction, string> = { H: 'Home', D: 'Draw', A: 'Away' };
 
 
 export default function PredictionsPage() {
+  const navigate = useNavigate();
   const [matches, setMatches] = useState<Match[]>([]);
   const [canEdit, setCanEdit] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -116,6 +118,20 @@ export default function PredictionsPage() {
       </div>
 
       {saveError && <p className="form-error">{saveError}</p>}
+
+      {(() => {
+        const predicted = matches.filter((m) => m.prediction !== null).length;
+        const total = matches.length;
+        const allDone = predicted === total;
+        return (
+          <div className="predictions-progress">
+            <span className="predictions-count">{predicted} / {total} predicted</span>
+            <button className="btn-primary" disabled={!allDone} onClick={() => navigate('/best-thirds')}>
+              Next
+            </button>
+          </div>
+        );
+      })()}
 
       {sections.map(({ key, heading, items }) => (
         <section key={key} className="group-section">

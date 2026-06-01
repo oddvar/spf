@@ -97,6 +97,21 @@
   color: var(--accent);
 }
 
+.predictions-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.predictions-count {
+  font-size: 14px;
+  color: var(--text);
+}
+
 .group-section {
   margin-bottom: 32px;
 }
@@ -230,6 +245,114 @@
 
 .predictions-page .form-error {
   margin-bottom: 10px;
+}
+
+/* Best thirds */
+.best-thirds-groups {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.group-standing {
+  min-width: 0;
+}
+
+.standing-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.standing-table th {
+  text-align: right;
+  padding: 3px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+
+.standing-table th.st-team {
+  text-align: left;
+}
+
+.standing-table th.st-pos {
+  width: 18px;
+  text-align: center;
+}
+
+.standing-table td {
+  padding: 5px 6px;
+  text-align: right;
+  color: var(--text-h);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.standing-table td.st-pos {
+  text-align: center;
+  color: var(--text);
+  font-size: 11px;
+}
+
+.standing-table td.st-team {
+  text-align: left;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 0;
+  width: 100%;
+}
+
+.standing-table td.st-pts {
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.qualifier-row td {
+  background: var(--accent-bg);
+}
+
+.non-qualifier-row td {
+  background: transparent;
+  opacity: 0.45;
+}
+
+.third-row td {
+  background: transparent;
+  transition: background 0.12s;
+}
+
+.third-row:hover:not(.third-row--disabled) td {
+  background: var(--accent-bg);
+}
+
+.third-row--selected td {
+  background: var(--accent);
+  color: #fff;
+}
+
+.third-row--selected td.st-pos,
+.third-row--selected td.st-pts {
+  color: #fff;
+}
+
+.third-row--disabled td {
+  opacity: 0.45;
+}
+
+@media (max-width: 700px) {
+  .best-thirds-groups {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 420px) {
+  .best-thirds-groups {
+    grid-template-columns: 1fr;
+  }
 }
 
 .predictions-loading {

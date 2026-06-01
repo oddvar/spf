@@ -52,6 +52,14 @@ export async function initDb(): Promise<void> {
     await pool.execute(`ALTER TABLE users ADD COLUMN can_view_others TINYINT(1) NOT NULL DEFAULT 0`);
   }
 
+  // Add best-thirds prediction columns (best_third_a…best_third_l) if not present
+  if (!(await columnExists('users', 'best_third_a'))) {
+    const cols = ['A','B','C','D','E','F','G','H','I','J','K','L']
+      .map((g) => `ADD COLUMN best_third_${g.toLowerCase()} TINYINT(1) NULL`)
+      .join(', ');
+    await pool.execute(`ALTER TABLE users ${cols}`);
+  }
+
   // Add match prediction columns (match1…match72) if not present
   if (!(await columnExists('users', 'match1'))) {
     const cols = Array.from(

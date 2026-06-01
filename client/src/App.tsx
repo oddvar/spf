@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
 import PredictionsPage from './pages/PredictionsPage';
+import BestThirdsPage from './pages/BestThirdsPage';
 import './App.css';
 
 function isLoggedIn(): boolean {
@@ -37,6 +38,15 @@ export default function App() {
             <ProtectedRoute>
               <Nav />
               <PredictionsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/best-thirds"
+          element={
+            <ProtectedRoute>
+              <Nav />
+              <BestThirdsPage />
             </ProtectedRoute>
           }
         />
