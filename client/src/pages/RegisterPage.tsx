@@ -1,6 +1,7 @@
 import { useState, useActionState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { post, ApiError } from '../api/client';
+import spfLogo from '../assets/spf.png';
 
 type PaymentStatus = 'NO' | 'WANTS_TO_PAY' | 'HAS_PAID';
 
@@ -90,6 +91,7 @@ export default function RegisterPage() {
 
   return (
     <div className="auth-container">
+      <img src={spfLogo} alt="SPF 2026" className="auth-logo" />
       <h1>Create account</h1>
       <p className="auth-subtitle">Join SPF 2026 — World Cup predictions</p>
 

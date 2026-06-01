@@ -1,6 +1,7 @@
 import { useState, useActionState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { post, ApiError } from '../api/client';
+import spfLogo from '../assets/spf.png';
 
 interface LoginResponse {
   token: string;
@@ -60,6 +61,7 @@ export default function LoginPage() {
 
   return (
     <div className="auth-container">
+      <img src={spfLogo} alt="SPF 2026" className="auth-logo" />
       <h1>Sign in</h1>
       <p className="auth-subtitle">SPF 2026 — World Cup predictions</p>
 

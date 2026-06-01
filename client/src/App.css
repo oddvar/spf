@@ -491,6 +491,12 @@
   text-align: left;
 }
 
+.auth-logo {
+  display: block;
+  max-width: 200px;
+  margin: 0 auto 24px;
+}
+
 .auth-container h1 {
   font-size: 28px;
   margin: 0 0 4px;
