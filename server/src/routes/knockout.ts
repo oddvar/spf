@@ -59,7 +59,7 @@ router.get('/knockout/matches', requireAuth, async (req: AuthRequest, res: Respo
     sfPredictions,
     fPredictions,
     thirdPrediction,
-    matches: (matches as KoMatchRow[]).map((m) => ({
+    r32Predictions: (matches as KoMatchRow[]).map((m) => ({
       ...m,
       match_datetime: (m.match_datetime as string).replace(' ', 'T') + 'Z',
       prediction: (userData[`ko${m.ko_number}`] as string | null) ?? null,

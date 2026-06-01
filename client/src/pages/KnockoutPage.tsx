@@ -30,7 +30,14 @@ function boxLeft(round: number): number {
 //   ko2+ko5 → R16 match 2   ko7+ko8 → R16 match 3
 //   ko12+ko11 → R16 match 4  ko10+ko9 → R16 match 5
 //   ko15+ko14 → R16 match 6  ko13+ko16 → R16 match 7
-const R32 = [3, 6, 1, 4, 2, 5, 7, 8, 12, 11, 10, 9, 15, 14, 13, 16];
+// R32 bracket order top→bottom, derived from QF/SF pairing structure:
+// QF1 (M97) ← R16-A (M89: ko3,ko6) + R16-B (M90: ko1,ko4)  ┐
+//                                                               ├→ SF1
+// QF3 (M98) ← R16-E (M93: ko12,ko11) + R16-F (M94: ko10,ko9)┘
+// QF2 (M99) ← R16-C (M91: ko2,ko5) + R16-D (M92: ko7,ko8)   ┐
+//                                                               ├→ SF2
+// QF4 (M100)← R16-G (M95: ko15,ko14)+ R16-H (M96: ko13,ko16)┘
+const R32 = [3, 6, 1, 4, 12, 11, 10, 9, 2, 5, 7, 8, 15, 14, 13, 16];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type KoPred = 'H' | 'A';
@@ -65,11 +72,11 @@ export default function KnockoutPage() {
 
   useEffect(() => {
     Promise.all([
-      get<{ matches: KoMatch[]; canEdit: boolean; r16Predictions: (string | null)[]; qfPredictions: (string | null)[]; sfPredictions: (string | null)[]; fPredictions: (string | null)[]; thirdPrediction: string | null }>('/knockout/matches'),
+      get<{ r32Predictions: KoMatch[]; canEdit: boolean; r16Predictions: (string | null)[]; qfPredictions: (string | null)[]; sfPredictions: (string | null)[]; fPredictions: (string | null)[]; thirdPrediction: string | null }>('/knockout/matches'),
       get<{ matches: GroupMatchFull[]; canEdit: boolean }>('/matches'),
       get<{ selections: string[] }>('/best-thirds'),
     ]).then(([ko, group, thirds]) => {
-      setKoMatches(ko.matches);
+      setKoMatches(ko.r32Predictions);
       setR16Preds(ko.r16Predictions);
       setQfPreds(ko.qfPredictions);
       setSfPreds(ko.sfPredictions);
@@ -176,8 +183,6 @@ export default function KnockoutPage() {
   }
 
   const predicted = koMatches.filter((m) => m.prediction !== null).length;
-  const allDone = predicted === koMatches.length && koMatches.length > 0;
-
   if (loading) return <div className="predictions-loading">Loading…</div>;
 
   // ── Name resolution helpers ────────────────────────────────────────────────
@@ -270,10 +275,7 @@ export default function KnockoutPage() {
 
       <div className="predictions-progress">
         <span className="predictions-count">{predicted} / {koMatches.length} predicted</span>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button className="btn-secondary" onClick={() => navigate('/best-thirds')}>Previous</button>
-          <button className="btn-primary" disabled={!allDone} onClick={() => navigate('/dashboard')}>Next</button>
-        </div>
+        <button className="btn-secondary" onClick={() => navigate('/best-thirds')}>Previous</button>
       </div>
 
       {saveError && <p className="form-error" style={{ marginBottom: '12px' }}>{saveError}</p>}
