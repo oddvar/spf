@@ -228,6 +228,10 @@
   cursor: not-allowed;
 }
 
+.predictions-page .form-error {
+  margin-bottom: 10px;
+}
+
 .predictions-loading {
   text-align: center;
   padding: 60px 20px;

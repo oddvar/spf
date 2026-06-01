@@ -1,5 +1,5 @@
 import { useState, useEffect, useTransition } from 'react';
-import { get, put } from '../api/client';
+import { get, put, ApiError } from '../api/client';
 
 type Prediction = 'H' | 'D' | 'A';
 type SortMode = 'group' | 'date';
@@ -23,6 +23,7 @@ export default function PredictionsPage() {
   const [canEdit, setCanEdit] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>(
     () => (localStorage.getItem('sortMode') as SortMode | null) ?? 'date',
   );
@@ -53,10 +54,14 @@ export default function PredictionsPage() {
     startTransition(async () => {
       try {
         await put(`/predictions/${matchId}`, { prediction });
-      } catch {
+      } catch (err) {
         setMatches((prev) =>
           prev.map((m) => (m.id === matchId ? { ...m, prediction: m.prediction } : m)),
         );
+        if (err instanceof ApiError && err.status === 403) {
+          setSaveError('The deadline for submitting predictions has now passed.');
+          setCanEdit(false);
+        }
       } finally {
         setSavingId(null);
       }
@@ -109,6 +114,8 @@ export default function PredictionsPage() {
           </button>
         </div>
       </div>
+
+      {saveError && <p className="form-error">{saveError}</p>}
 
       {sections.map(({ key, heading, items }) => (
         <section key={key} className="group-section">
