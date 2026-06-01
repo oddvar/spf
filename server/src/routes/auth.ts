@@ -94,6 +94,8 @@ router.post('/login', async (req: Request, res: Response) => {
       email: string;
       password_hash: string;
       payment_status: PaymentStatus;
+      can_edit: number;
+      can_view_others: number;
     }>;
 
     if (users.length === 0) {
@@ -124,6 +126,8 @@ router.post('/login', async (req: Request, res: Response) => {
         lastName: user.last_name,
         email: user.email,
         paymentStatus: user.payment_status,
+        canEdit: !!user.can_edit,
+        canViewOthers: !!user.can_view_others,
       },
     });
   } catch (err) {

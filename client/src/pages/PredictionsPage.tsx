@@ -20,6 +20,7 @@ const LABELS: Record<Prediction, string> = { H: 'Home', D: 'Draw', A: 'Away' };
 
 export default function PredictionsPage() {
   const [matches, setMatches] = useState<Match[]>([]);
+  const [canEdit, setCanEdit] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>(
@@ -34,9 +35,10 @@ export default function PredictionsPage() {
   const [savingId, setSavingId] = useState<number | null>(null);
 
   useEffect(() => {
-    get<Match[]>('/matches')
-      .then((data) => {
-        setMatches(data);
+    get<{ matches: Match[]; canEdit: boolean }>('/matches')
+      .then(({ matches, canEdit }) => {
+        setMatches(matches);
+        setCanEdit(canEdit);
         setLoading(false);
       })
       .catch(() => {
@@ -131,18 +133,24 @@ export default function PredictionsPage() {
                   )}
                 </div>
                 <div className="prediction-btns" aria-label={`Prediction for ${match.home_team} vs ${match.away_team}`}>
-                  {(['H', 'D', 'A'] as Prediction[]).map((p) => (
-                    <button
-                      key={p}
-                      className={`pred-btn${match.prediction === p ? ' pred-btn--selected' : ''}`}
-                      onClick={() => predict(match.id, p)}
-                      disabled={savingId === match.id && isPending}
-                      aria-pressed={match.prediction === p}
-                      title={LABELS[p]}
-                    >
-                      {p}
-                    </button>
-                  ))}
+                  {canEdit ? (
+                    (['H', 'D', 'A'] as Prediction[]).map((p) => (
+                      <button
+                        key={p}
+                        className={`pred-btn${match.prediction === p ? ' pred-btn--selected' : ''}`}
+                        onClick={() => predict(match.id, p)}
+                        disabled={savingId === match.id && isPending}
+                        aria-pressed={match.prediction === p}
+                        title={LABELS[p]}
+                      >
+                        {p}
+                      </button>
+                    ))
+                  ) : (
+                    match.prediction
+                      ? <span className="pred-readonly">{match.prediction}</span>
+                      : <span className="pred-readonly pred-readonly--empty">—</span>
+                  )}
                 </div>
               </div>
             ))}

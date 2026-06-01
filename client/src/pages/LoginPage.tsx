@@ -11,6 +11,8 @@ interface LoginResponse {
     lastName: string;
     email: string;
     paymentStatus: string;
+    canEdit: boolean;
+    canViewOthers: boolean;
   };
 }
 
@@ -45,6 +47,7 @@ export default function LoginPage() {
         localStorage.setItem('token', data.token);
         localStorage.setItem('firstName', data.user.firstName);
         localStorage.setItem('lastName', data.user.lastName);
+        localStorage.setItem('canEdit', String(data.user.canEdit));
         navigate('/predictions');
         return null;
       } catch (err) {

@@ -28,22 +28,25 @@ router.get('/matches', optionalAuth, async (req: AuthRequest, res: Response) => 
   });
 
   if (!req.userId) {
-    res.json((matches as MatchRow[]).map(normalise));
+    res.json({ matches: (matches as MatchRow[]).map(normalise), canEdit: false });
     return;
   }
 
   const [userRows] = await pool.execute(
-    `SELECT ${PRED_COLS} FROM users WHERE id = ?`,
+    `SELECT can_edit, ${PRED_COLS} FROM users WHERE id = ?`,
     [req.userId],
   );
-  const preds = (userRows as Record<string, string | null>[])[0] ?? {};
+  const userData = (userRows as Record<string, string | null | number>[])[0] ?? {};
+  const canEdit = !!userData.can_edit;
+  const preds = userData as Record<string, string | null>;
 
-  res.json(
-    (matches as MatchRow[]).map((m) => ({
+  res.json({
+    canEdit,
+    matches: (matches as MatchRow[]).map((m) => ({
       ...normalise(m),
       prediction: preds[`match${m.match_number}`] ?? null,
     })),
-  );
+  });
 });
 
 router.put('/predictions/:matchId', requireAuth, async (req: AuthRequest, res: Response) => {
@@ -52,6 +55,12 @@ router.put('/predictions/:matchId', requireAuth, async (req: AuthRequest, res: R
 
   if (!prediction || !['H', 'D', 'A'].includes(prediction)) {
     res.status(400).json({ error: 'prediction must be H, D, or A' });
+    return;
+  }
+
+  const [userRows] = await pool.execute('SELECT can_edit FROM users WHERE id = ?', [req.userId!]);
+  if (!(userRows as Array<{ can_edit: number }>)[0]?.can_edit) {
+    res.status(403).json({ error: 'Predictions are locked for your account' });
     return;
   }
 

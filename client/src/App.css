@@ -205,6 +205,24 @@
   color: #fff;
 }
 
+.pred-readonly {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 30px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--accent);
+  color: #fff;
+}
+
+.pred-readonly--empty {
+  background: transparent;
+  color: var(--text);
+}
+
 .pred-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;

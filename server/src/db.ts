@@ -45,6 +45,12 @@ export async function initDb(): Promise<void> {
   if (!(await columnExists('users', 'last_login'))) {
     await pool.execute(`ALTER TABLE users ADD COLUMN last_login DATETIME NULL`);
   }
+  if (!(await columnExists('users', 'can_edit'))) {
+    await pool.execute(`ALTER TABLE users ADD COLUMN can_edit TINYINT(1) NOT NULL DEFAULT 1`);
+  }
+  if (!(await columnExists('users', 'can_view_others'))) {
+    await pool.execute(`ALTER TABLE users ADD COLUMN can_view_others TINYINT(1) NOT NULL DEFAULT 0`);
+  }
 
   // Add match prediction columns (match1…match72) if not present
   if (!(await columnExists('users', 'match1'))) {
