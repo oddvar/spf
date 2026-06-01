@@ -43,7 +43,9 @@ export default function LoginPage() {
       try {
         const data = await post<LoginResponse>('/auth/login', { email: email.trim(), password });
         localStorage.setItem('token', data.token);
-        navigate('/dashboard');
+        localStorage.setItem('firstName', data.user.firstName);
+        localStorage.setItem('lastName', data.user.lastName);
+        navigate('/predictions');
         return null;
       } catch (err) {
         if (err instanceof ApiError) return err.message;

@@ -46,6 +46,12 @@
   flex-wrap: wrap;
 }
 
+.predictions-greeting {
+  font-size: 14px;
+  color: var(--text);
+  margin: 0 0 4px;
+}
+
 .predictions-page h1 {
   font-size: 28px;
   margin: 0 0 4px;

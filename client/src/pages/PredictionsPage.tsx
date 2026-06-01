@@ -54,6 +54,9 @@ export default function PredictionsPage() {
     });
   }
 
+  const firstName = localStorage.getItem('firstName') ?? '';
+  const lastName = localStorage.getItem('lastName') ?? '';
+
   if (loading) return <div className="predictions-loading">Loading matches…</div>;
   if (error) return <div className="predictions-loading">{error}</div>;
 
@@ -76,6 +79,7 @@ export default function PredictionsPage() {
     <div className="predictions-page">
       <div className="predictions-header">
         <div>
+          <p className="predictions-greeting">Hello, {firstName} {lastName}</p>
           <h1>Group Stage Predictions</h1>
           <p className="predictions-subtitle">
             Pick <strong>H</strong>ome win, <strong>D</strong>raw, or <strong>A</strong>way win for each match.
