@@ -2,7 +2,12 @@ import mysql from 'mysql2/promise';
 import 'dotenv/config';
 
 export const MATCH_COUNT = 72;
-export const KO_MATCH_COUNT = 16;
+export const KO_MATCH_COUNT = 16;  // Round of 32
+export const KO_R16_COUNT  = 8;   // Round of 16
+export const KO_QF_COUNT   = 4;   // Quarter-finals
+export const KO_SF_COUNT   = 2;   // Semi-finals
+export const KO_F_COUNT    = 1;   // Final
+export const KO_T_COUNT    = 1;   // Third place
 
 export const pool = mysql.createPool({
   host: process.env.DB_HOST ?? 'localhost',
@@ -70,13 +75,40 @@ export async function initDb(): Promise<void> {
     await pool.execute(`ALTER TABLE users ${cols}`);
   }
 
-  // Add knockout prediction columns (ko1…ko16)
+  // Add knockout prediction columns (ko1…ko16 R32, ko17…ko24 R16)
   if (!(await columnExists('users', 'ko1'))) {
     const cols = Array.from(
       { length: KO_MATCH_COUNT },
       (_, i) => `ADD COLUMN ko${i + 1} ENUM('H', 'A') NULL`,
     ).join(', ');
     await pool.execute(`ALTER TABLE users ${cols}`);
+  }
+  if (!(await columnExists('users', 'ko17'))) {
+    const cols = Array.from(
+      { length: KO_R16_COUNT },
+      (_, i) => `ADD COLUMN ko${i + 17} ENUM('H', 'A') NULL`,
+    ).join(', ');
+    await pool.execute(`ALTER TABLE users ${cols}`);
+  }
+  if (!(await columnExists('users', 'ko25'))) {
+    const cols = Array.from(
+      { length: KO_QF_COUNT },
+      (_, i) => `ADD COLUMN ko${i + 25} ENUM('H', 'A') NULL`,
+    ).join(', ');
+    await pool.execute(`ALTER TABLE users ${cols}`);
+  }
+  if (!(await columnExists('users', 'ko29'))) {
+    const cols = Array.from(
+      { length: KO_SF_COUNT },
+      (_, i) => `ADD COLUMN ko${i + 29} ENUM('H', 'A') NULL`,
+    ).join(', ');
+    await pool.execute(`ALTER TABLE users ${cols}`);
+  }
+  if (!(await columnExists('users', 'ko31'))) {
+    await pool.execute(`ALTER TABLE users ADD COLUMN ko31 ENUM('H', 'A') NULL`);
+  }
+  if (!(await columnExists('users', 'ko32'))) {
+    await pool.execute(`ALTER TABLE users ADD COLUMN ko32 ENUM('H', 'A') NULL`);
   }
 
   // Migrate any existing data from the old predictions table, then drop it
