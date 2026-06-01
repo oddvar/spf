@@ -183,7 +183,14 @@ export default function KnockoutPage() {
     });
   }
 
-  const predicted = koMatches.filter((m) => m.prediction !== null).length;
+  const predicted =
+    koMatches.filter((m) => m.prediction !== null).length +
+    r16Preds.filter((p) => p !== null).length +
+    qfPreds.filter((p) => p !== null).length +
+    sfPreds.filter((p) => p !== null).length +
+    (fPred !== null ? 1 : 0) +
+    (thirdPred !== null ? 1 : 0);
+  const total = koMatches.length + r16Preds.length + qfPreds.length + sfPreds.length + 2;
   if (loading) return <div className="predictions-loading">Loading…</div>;
 
   // ── Name resolution helpers ────────────────────────────────────────────────
@@ -267,15 +274,15 @@ export default function KnockoutPage() {
           <p className="predictions-greeting">
             {localStorage.getItem('firstName')} {localStorage.getItem('lastName')}
           </p>
-          <h1>Knockout Stage</h1>
+          <h1>Knockout stage predictions</h1>
           <p className="predictions-subtitle">
-            Click a team to pick them as the winner. Please note that if you go back and change the previous predictions, it might change your knockout stage predictions as well!
+            Click a team to pick them as the winner of that match. Please note that if you go back and change the previous predictions, this might change your knockout stage predictions as well!
           </p>
         </div>
       </div>
 
       <div className="predictions-progress">
-        <span className="predictions-count">{predicted} / {koMatches.length} predicted</span>
+        <span className="predictions-count">{predicted} / {total} predicted</span>
         <button className="btn-secondary" onClick={() => navigate('/best-thirds')}>Previous</button>
       </div>
 

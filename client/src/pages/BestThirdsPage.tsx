@@ -84,9 +84,9 @@ export default function BestThirdsPage() {
           <p className="predictions-greeting">
             {localStorage.getItem('firstName')} {localStorage.getItem('lastName')}
           </p>
-          <h1>Best Third-Placed Teams</h1>
+          <h1>Group tables and best third-placed teams</h1>
           <p className="predictions-subtitle">
-            Select the <strong>{REQUIRED}</strong> third-placed teams who will advance to the Round of 32.
+            These are the tables based on your group match predictions. Select the <strong>{REQUIRED}</strong> third-placed teams who will advance to the Round of 32.
             Click a third-place row to select it. Use ▲▼ to break ties. Please note that these selections will reset if you change your group stage predictions.
           </p>
         </div>
