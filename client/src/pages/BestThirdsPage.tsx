@@ -87,7 +87,7 @@ export default function BestThirdsPage() {
           <h1>Best Third-Placed Teams</h1>
           <p className="predictions-subtitle">
             Select the <strong>{REQUIRED}</strong> third-placed teams who will advance to the Round of 32.
-            Click a third-place row to select it. Use ▲▼ to break ties.
+            Click a third-place row to select it. Use ▲▼ to break ties. Please note that these selections will reset if you change your group stage predictions.
           </p>
         </div>
       </div>

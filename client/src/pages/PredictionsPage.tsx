@@ -98,7 +98,7 @@ export default function PredictionsPage() {
           <p className="predictions-greeting">Hello, {firstName} {lastName}</p>
           <h1>Group Stage Predictions</h1>
           <p className="predictions-subtitle">
-            Pick <strong>H</strong>ome win, <strong>D</strong>raw, or <strong>A</strong>way win for each match.
+            Pick <strong>H</strong>ome win, <strong>D</strong>raw, or <strong>A</strong>way win for each match. Please note that changing these predictions will reset the best thirds selections on the next page.
           </p>
         </div>
         <div className="sort-toggle" role="group" aria-label="Sort matches by">
