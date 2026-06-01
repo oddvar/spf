@@ -22,7 +22,14 @@ export default function PredictionsPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sortMode, setSortMode] = useState<SortMode>('date');
+  const [sortMode, setSortMode] = useState<SortMode>(
+    () => (localStorage.getItem('sortMode') as SortMode | null) ?? 'date',
+  );
+
+  function updateSortMode(mode: SortMode) {
+    setSortMode(mode);
+    localStorage.setItem('sortMode', mode);
+  }
   const [isPending, startTransition] = useTransition();
   const [savingId, setSavingId] = useState<number | null>(null);
 
@@ -88,13 +95,13 @@ export default function PredictionsPage() {
         <div className="sort-toggle" role="group" aria-label="Sort matches by">
           <button
             className={`sort-btn${sortMode === 'group' ? ' sort-btn--active' : ''}`}
-            onClick={() => setSortMode('group')}
+            onClick={() => updateSortMode('group')}
           >
             By group
           </button>
           <button
             className={`sort-btn${sortMode === 'date' ? ' sort-btn--active' : ''}`}
-            onClick={() => setSortMode('date')}
+            onClick={() => updateSortMode('date')}
           >
             By date
           </button>
