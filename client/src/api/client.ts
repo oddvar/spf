@@ -15,6 +15,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE}${path}`, { ...options, headers });
   const data = await res.json();
 
+  if (res.status === 401) {
+    localStorage.removeItem('token');
+    window.location.href = '/login';
+    throw new ApiError(401, (data as { error?: string }).error ?? 'Unauthorised');
+  }
+
   if (!res.ok) {
     throw new ApiError(res.status, (data as { error?: string }).error ?? 'Unknown error');
   }
@@ -30,6 +36,14 @@ export class ApiError extends Error {
   }
 }
 
+export function get<T>(path: string): Promise<T> {
+  return request<T>(path);
+}
+
 export function post<T>(path: string, body: unknown): Promise<T> {
   return request<T>(path, { method: 'POST', body: JSON.stringify(body) });
+}
+
+export function put<T>(path: string, body: unknown): Promise<T> {
+  return request<T>(path, { method: 'PUT', body: JSON.stringify(body) });
 }

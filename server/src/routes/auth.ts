@@ -113,6 +113,8 @@ router.post('/login', async (req: Request, res: Response) => {
 
     const token = jwt.sign({ id: user.id, username: user.username }, secret, { expiresIn: '7d' });
 
+    await pool.execute(`UPDATE users SET last_login = NOW() WHERE id = ?`, [user.id]);
+
     res.json({
       token,
       user: {

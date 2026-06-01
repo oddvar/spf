@@ -1,5 +1,5 @@
 import { useState, useEffect, useTransition } from 'react';
-import { post } from '../api/client';
+import { get, put } from '../api/client';
 
 type Prediction = 'H' | 'D' | 'A';
 type SortMode = 'group' | 'date';
@@ -27,11 +27,8 @@ export default function PredictionsPage() {
   const [savingId, setSavingId] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch('/api/matches', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token') ?? ''}` },
-    })
-      .then((r) => r.json())
-      .then((data: Match[]) => {
+    get<Match[]>('/matches')
+      .then((data) => {
         setMatches(data);
         setLoading(false);
       })
@@ -46,7 +43,7 @@ export default function PredictionsPage() {
     setSavingId(matchId);
     startTransition(async () => {
       try {
-        await post(`/predictions/${matchId}`, { prediction });
+        await put(`/predictions/${matchId}`, { prediction });
       } catch {
         setMatches((prev) =>
           prev.map((m) => (m.id === matchId ? { ...m, prediction: m.prediction } : m)),

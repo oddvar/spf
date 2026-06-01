@@ -4,6 +4,15 @@ import LoginPage from './pages/LoginPage';
 import PredictionsPage from './pages/PredictionsPage';
 import './App.css';
 
+function isLoggedIn(): boolean {
+  return !!localStorage.getItem('token');
+}
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  if (!isLoggedIn()) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
+
 function Nav() {
   return (
     <nav className="main-nav">
@@ -25,10 +34,10 @@ export default function App() {
         <Route
           path="/predictions"
           element={
-            <>
+            <ProtectedRoute>
               <Nav />
               <PredictionsPage />
-            </>
+            </ProtectedRoute>
           }
         />
       </Routes>

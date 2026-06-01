@@ -34,12 +34,16 @@ export async function initDb(): Promise<void> {
       password_hash   VARCHAR(255)  NOT NULL,
       payment_status  ENUM('NO', 'WANTS_TO_PAY', 'HAS_PAID') NOT NULL DEFAULT 'NO',
       active          TINYINT(1)    NOT NULL DEFAULT 1,
+      last_login      DATETIME      NULL,
       created_at      TIMESTAMP     DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
   if (!(await columnExists('users', 'active'))) {
     await pool.execute(`ALTER TABLE users ADD COLUMN active TINYINT(1) NOT NULL DEFAULT 1`);
+  }
+  if (!(await columnExists('users', 'last_login'))) {
+    await pool.execute(`ALTER TABLE users ADD COLUMN last_login DATETIME NULL`);
   }
 
   // Add match prediction columns (match1…match72) if not present
