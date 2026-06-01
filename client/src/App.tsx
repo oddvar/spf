@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
 import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
 import PredictionsPage from './pages/PredictionsPage';
@@ -16,11 +16,24 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function Nav() {
+  const navigate = useNavigate();
+
+  function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('firstName');
+    localStorage.removeItem('lastName');
+    localStorage.removeItem('canEdit');
+    navigate('/login');
+  }
+
   return (
     <nav className="main-nav">
       <span className="nav-brand">SPF 2026</span>
-      <div className="nav-links">
+      <div className="nav-center">
         <Link to="/predictions">Predictions</Link>
+      </div>
+      <div className="nav-right">
+        <button className="nav-logout" onClick={logout}>Log out</button>
       </div>
     </nav>
   );

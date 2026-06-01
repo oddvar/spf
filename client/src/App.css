@@ -6,6 +6,7 @@
   padding: 0 24px;
   height: 52px;
   border-bottom: 1px solid var(--border);
+  position: relative;
 }
 
 .nav-brand {
@@ -15,18 +16,38 @@
   letter-spacing: 0.04em;
 }
 
-.nav-links {
+.nav-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   gap: 20px;
 }
 
-.nav-links a {
+.nav-center a {
   font-size: 14px;
   color: var(--text);
   text-decoration: none;
 }
 
-.nav-links a:hover {
+.nav-center a:hover {
+  color: var(--accent);
+}
+
+.nav-right {
+  margin-left: auto;
+}
+
+.nav-logout {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0;
+}
+
+.nav-logout:hover {
   color: var(--accent);
 }
 
