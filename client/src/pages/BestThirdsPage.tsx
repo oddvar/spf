@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { get, put } from '../api/client';
+import { get, put, ApiError } from '../api/client';
 import { orderedStandings, applyCustomOrder, loadCustomOrders, type GroupMatch, type Standing, type CustomOrders } from '../utils/standings';
 
 const GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'] as const;
@@ -18,6 +18,8 @@ export default function BestThirdsPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [selections, setSelections] = useState<Set<string>>(new Set());
   const [customOrders, setCustomOrders] = useState<CustomOrders>(() => loadCustomOrders());
+  const [canEdit, setCanEdit] = useState(true);
+  const [lockedMessage, setLockedMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -25,8 +27,9 @@ export default function BestThirdsPage() {
     Promise.all([
       get<{ matches: Match[]; canEdit: boolean }>('/matches'),
       get<{ selections: string[] }>('/best-thirds'),
-    ]).then(([{ matches }, { selections }]) => {
+    ]).then(([{ matches, canEdit }, { selections }]) => {
       setMatches(matches);
+      setCanEdit(canEdit);
       setSelections(new Set(selections));
       setLoading(false);
     });
@@ -61,6 +64,11 @@ export default function BestThirdsPage() {
     setSaving(true);
     try {
       await put('/best-thirds', { selections: Array.from(next) });
+    } catch (err) {
+      setSelections(selections);
+      if (err instanceof ApiError && err.status === 403) {
+        setLockedMessage('The deadline for submitting selections has now passed.');
+      }
     } finally {
       setSaving(false);
     }
@@ -104,6 +112,8 @@ export default function BestThirdsPage() {
         </div>
       </div>
 
+      {lockedMessage && <p className="form-error" style={{ marginBottom: '16px' }}>{lockedMessage}</p>}
+
       <div className="best-thirds-groups">
         {GROUPS.map((group) => {
           const standings = getStandings(group);
@@ -142,8 +152,8 @@ export default function BestThirdsPage() {
                               : 'non-qualifier-row'
                             : i < 2 ? 'qualifier-row' : 'non-qualifier-row'
                         }
-                        onClick={isThird && eligible && !maxReached && !saving ? () => toggle(group) : undefined}
-                        style={isThird && eligible && !maxReached ? { cursor: 'pointer' } : undefined}
+                        onClick={isThird && eligible && canEdit && !maxReached && !saving ? () => toggle(group) : undefined}
+                        style={isThird && eligible && canEdit && !maxReached ? { cursor: 'pointer' } : undefined}
                       >
                         <td className="st-pos">{i + 1}</td>
                         <td className="st-team">{s.team}</td>
@@ -155,13 +165,13 @@ export default function BestThirdsPage() {
                           <td className="st-sort" onClick={(e) => e.stopPropagation()}>
                             <button
                               className="sort-arrow"
-                              disabled={!canMoveUp}
+                              disabled={!canMoveUp || !canEdit}
                               onClick={() => moveTeam(group, standings, i, 'up')}
                               title="Move up"
                             >▲</button>
                             <button
                               className="sort-arrow"
-                              disabled={!canMoveDown}
+                              disabled={!canMoveDown || !canEdit}
                               onClick={() => moveTeam(group, standings, i, 'down')}
                               title="Move down"
                             >▼</button>

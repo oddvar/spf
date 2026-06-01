@@ -16,6 +16,12 @@ router.get('/best-thirds', requireAuth, async (req: AuthRequest, res: Response) 
 });
 
 router.put('/best-thirds', requireAuth, async (req: AuthRequest, res: Response) => {
+  const [userRows] = await pool.execute('SELECT can_edit FROM users WHERE id = ?', [req.userId!]);
+  if (!(userRows as Array<{ can_edit: number }>)[0]?.can_edit) {
+    res.status(403).json({ error: 'Selections are locked for your account' });
+    return;
+  }
+
   const { selections } = req.body as { selections?: string[] };
 
   if (!Array.isArray(selections)) {
