@@ -16,6 +16,8 @@ export interface Standing {
 
 export type CustomOrders = Record<string, string[]>;
 
+import { THIRD_PLACE_TABLE, SLOT_COL } from './thirdPlaceTable';
+
 const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L'];
 const LS_KEY = (g: string) => `spf2026_order_${g}`;
 
@@ -106,15 +108,16 @@ export function resolveSlot(
   }
 
   if (pos === '3') {
-    const eligible = bestThirdsSelections.filter((g) => groups.includes(g));
-    if (eligible.length === 0) return `3rd (${groups.split('').join('/')})`;
+    if (bestThirdsSelections.length < 8) return `3rd (${groups.split('').join('/')})`;
 
-    const ranked = eligible
-      .map((g) => ({ g, points: orderedStandings(matches, g, customOrders)[2]?.points ?? 0 }))
-      .sort((a, b) => b.points - a.points || a.g.localeCompare(b.g));
+    const key = [...bestThirdsSelections].sort().join('');
+    const row = THIRD_PLACE_TABLE[key];
+    const col = SLOT_COL[`3${groups}`];
 
-    const best = ranked[0].g;
-    return orderedStandings(matches, best, customOrders)[2]?.team ?? `3rd ${best}`;
+    if (!row || col === undefined) return `3rd (${groups.split('').join('/')})`;
+
+    const assignedGroup = row[col];
+    return orderedStandings(matches, assignedGroup, customOrders)[2]?.team ?? `3rd ${assignedGroup}`;
   }
 
   return slot;
