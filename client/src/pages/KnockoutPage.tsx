@@ -1,7 +1,7 @@
 import { useState, useEffect, useTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { get, put, ApiError } from '../api/client';
-import { resolveSlot, type GroupMatch } from '../utils/standings';
+import { resolveSlot, loadCustomOrders, type GroupMatch } from '../utils/standings';
 
 // ─── Layout constants ────────────────────────────────────────────────────────
 const SLOT   = 64;   // px height per R32 slot
@@ -62,6 +62,7 @@ export default function KnockoutPage() {
   const [sfPreds,  setSfPreds]  = useState<(string | null)[]>(Array(2).fill(null));
   const [fPred,    setFPred]    = useState<string | null>(null);
   const [thirdPred, setThirdPred] = useState<string | null>(null);
+  const customOrders = loadCustomOrders();
   const [groupMatches, setGroupMatches] = useState<GroupMatchFull[]>([]);
   const [bestThirds, setBestThirds] = useState<string[]>([]);
   const [canEdit, setCanEdit] = useState(true);
@@ -187,7 +188,7 @@ export default function KnockoutPage() {
 
   // ── Name resolution helpers ────────────────────────────────────────────────
   function slot(s: string): string {
-    return resolveSlot(s, groupMatches, bestThirds);
+    return resolveSlot(s, groupMatches, bestThirds, customOrders);
   }
 
   function r32Winner(koNum: number): string {

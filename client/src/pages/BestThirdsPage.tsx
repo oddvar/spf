@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { get, put } from '../api/client';
-import { calcStandings, type GroupMatch } from '../utils/standings';
+import { orderedStandings, applyCustomOrder, loadCustomOrders, type GroupMatch, type Standing, type CustomOrders } from '../utils/standings';
 
 const GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'] as const;
 const REQUIRED = 8;
+const LS_KEY = (g: string) => `spf2026_order_${g}`;
 
 interface Match extends GroupMatch {
   id: number;
@@ -16,6 +17,7 @@ export default function BestThirdsPage() {
   const navigate = useNavigate();
   const [matches, setMatches] = useState<Match[]>([]);
   const [selections, setSelections] = useState<Set<string>>(new Set());
+  const [customOrders, setCustomOrders] = useState<CustomOrders>(() => loadCustomOrders());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -29,6 +31,23 @@ export default function BestThirdsPage() {
       setLoading(false);
     });
   }, []);
+
+  function getStandings(group: string): Standing[] {
+    return orderedStandings(matches, group, customOrders);
+  }
+
+  function moveTeam(group: string, standings: Standing[], idx: number, dir: 'up' | 'down') {
+    const swapIdx = dir === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= standings.length) return;
+    if (standings[swapIdx].points !== standings[idx].points) return;
+
+    const next = [...standings];
+    [next[idx], next[swapIdx]] = [next[swapIdx], next[idx]];
+    const order = next.map((s) => s.team);
+
+    localStorage.setItem(LS_KEY(group), JSON.stringify(order));
+    setCustomOrders((prev) => ({ ...prev, [group]: order }));
+  }
 
   async function toggle(group: string) {
     const next = new Set(selections);
@@ -51,7 +70,7 @@ export default function BestThirdsPage() {
   const allDone = count === REQUIRED;
 
   // Determine which groups' 3rd-place teams are eligible (top 8 by points)
-  const thirdPoints = new Map(GROUPS.map((g) => [g, calcStandings(matches, g)[2]?.points ?? 0]));
+  const thirdPoints = new Map(GROUPS.map((g) => [g, getStandings(g)[2]?.points ?? 0]));
   const sortedThirdPoints = Array.from(thirdPoints.values()).sort((a, b) => b - a);
   const threshold = sortedThirdPoints[REQUIRED - 1] ?? 0;
   const eligibleGroups = new Set(GROUPS.filter((g) => (thirdPoints.get(g) ?? 0) >= threshold));
@@ -68,7 +87,7 @@ export default function BestThirdsPage() {
           <h1>Best Third-Placed Teams</h1>
           <p className="predictions-subtitle">
             Select the <strong>{REQUIRED}</strong> groups whose third-placed team will advance to the Round of 32.
-            Click a third-place row to select it.
+            Click a third-place row to select it. Use ▲▼ to break ties.
           </p>
         </div>
       </div>
@@ -87,10 +106,12 @@ export default function BestThirdsPage() {
 
       <div className="best-thirds-groups">
         {GROUPS.map((group) => {
-          const standings = calcStandings(matches, group);
+          const standings = getStandings(group);
           const selected = selections.has(group);
           const eligible = eligibleGroups.has(group);
           const maxReached = !selected && count >= REQUIRED;
+          const hasTies = standings.some((s, i) => i > 0 && s.points === standings[i - 1].points);
+
           return (
             <div key={group} className="group-standing">
               <h2 className="group-heading">Group {group}</h2>
@@ -103,11 +124,14 @@ export default function BestThirdsPage() {
                     <th>D</th>
                     <th>L</th>
                     <th>Pts</th>
+                    {hasTies && <th className="st-sort"></th>}
                   </tr>
                 </thead>
                 <tbody>
                   {standings.map((s, i) => {
                     const isThird = i === 2;
+                    const canMoveUp   = hasTies && i > 0 && standings[i - 1].points === s.points;
+                    const canMoveDown = hasTies && i < standings.length - 1 && standings[i + 1].points === s.points;
                     return (
                       <tr
                         key={s.team}
@@ -127,6 +151,22 @@ export default function BestThirdsPage() {
                         <td>{s.played > 0 ? s.drawn : '—'}</td>
                         <td>{s.played > 0 ? s.lost : '—'}</td>
                         <td className="st-pts">{s.played > 0 ? s.points : '—'}</td>
+                        {hasTies && (
+                          <td className="st-sort" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              className="sort-arrow"
+                              disabled={!canMoveUp}
+                              onClick={() => moveTeam(group, standings, i, 'up')}
+                              title="Move up"
+                            >▲</button>
+                            <button
+                              className="sort-arrow"
+                              disabled={!canMoveDown}
+                              onClick={() => moveTeam(group, standings, i, 'down')}
+                              title="Move down"
+                            >▼</button>
+                          </td>
+                        )}
                       </tr>
                     );
                   })}

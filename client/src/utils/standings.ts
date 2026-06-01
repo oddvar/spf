@@ -14,6 +14,44 @@ export interface Standing {
   points: number;
 }
 
+export type CustomOrders = Record<string, string[]>;
+
+const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+const LS_KEY = (g: string) => `spf2026_order_${g}`;
+
+export function loadCustomOrders(): CustomOrders {
+  const result: CustomOrders = {};
+  for (const g of GROUPS) {
+    const raw = localStorage.getItem(LS_KEY(g));
+    if (raw) try { result[g] = JSON.parse(raw); } catch { /* ignore */ }
+  }
+  return result;
+}
+
+export function applyCustomOrder(standings: Standing[], savedOrder: string[]): Standing[] {
+  const result = [...standings];
+  let i = 0;
+  while (i < result.length) {
+    const pts = result[i].points;
+    let j = i + 1;
+    while (j < result.length && result[j].points === pts) j++;
+    if (j - i > 1) {
+      const tieSlice = result.slice(i, j);
+      tieSlice.sort((a, b) => {
+        const ai = savedOrder.indexOf(a.team);
+        const bi = savedOrder.indexOf(b.team);
+        if (ai === -1 && bi === -1) return 0;
+        if (ai === -1) return 1;
+        if (bi === -1) return -1;
+        return ai - bi;
+      });
+      result.splice(i, j - i, ...tieSlice);
+    }
+    i = j;
+  }
+  return result;
+}
+
 export function calcStandings(matches: GroupMatch[], group: string): Standing[] {
   const groupMatches = matches.filter((m) => m.group_name === group);
   const table = new Map<string, Standing>();
@@ -39,38 +77,44 @@ export function calcStandings(matches: GroupMatch[], group: string): Standing[] 
   return Array.from(table.values()).sort((a, b) => b.points - a.points || b.won - a.won);
 }
 
+export function orderedStandings(
+  matches: GroupMatch[],
+  group: string,
+  customOrders: CustomOrders = {},
+): Standing[] {
+  const base = calcStandings(matches, group);
+  const saved = customOrders[group];
+  return saved ? applyCustomOrder(base, saved) : base;
+}
+
 /**
  * Resolves a slot label (e.g. "1A", "2B", "3ABCDF") to a team name.
- * - "1X" → 1st place in group X
- * - "2X" → 2nd place in group X
- * - "3XYZ…" → the user's best-thirds selection from those groups with the most 3rd-place points
+ * Accepts an optional customOrders map to honour user tiebreaker ordering.
  */
 export function resolveSlot(
   slot: string,
   matches: GroupMatch[],
   bestThirdsSelections: string[],
+  customOrders: CustomOrders = {},
 ): string {
   const pos = slot[0];
   const groups = slot.slice(1).toUpperCase();
 
   if (pos === '1' || pos === '2') {
     const idx = pos === '1' ? 0 : 1;
-    const standings = calcStandings(matches, groups);
-    return standings[idx]?.team ?? slot;
+    return orderedStandings(matches, groups, customOrders)[idx]?.team ?? slot;
   }
 
   if (pos === '3') {
-    // Find which of the user's best-thirds selections falls in this slot's eligible groups
     const eligible = bestThirdsSelections.filter((g) => groups.includes(g));
     if (eligible.length === 0) return `3rd (${groups.split('').join('/')})`;
 
-    // Pick the one with the most 3rd-place points; break ties alphabetically
     const ranked = eligible
-      .map((g) => ({ g, points: calcStandings(matches, g)[2]?.points ?? 0 }))
+      .map((g) => ({ g, points: orderedStandings(matches, g, customOrders)[2]?.points ?? 0 }))
       .sort((a, b) => b.points - a.points || a.g.localeCompare(b.g));
 
     const best = ranked[0].g;
-    return calcStandings(matches, best)[2]?.team ?? `3rd ${best}`;
+    return orderedStandings(matches, best, customOrders)[2]?.team ?? `3rd ${best}`;
   }
 
   return slot;
