@@ -8,8 +8,9 @@ const SLOT   = 64;   // px height per R32 slot
 const BOX_H  = 48;   // px match box height (2 × 24 team rows)
 const BOX_W  = 160;  // px match box width
 const COL_GAP = 28;  // px column gap (holds connector lines)
-const TOTAL_H = 16 * SLOT;                       // 1024px
+const TOTAL_H = 16 * SLOT + 80;                  // 1104px (extra room for 3rd place)
 const TOTAL_W = 5 * BOX_W + 4 * COL_GAP + 1;    // 941px
+const THIRD_PLACE_TOP = 16 * SLOT - 20;          // 1004px — below SF2, same column as Final
 
 // Vertical centre of a match box
 function boxCy(round: number, idx: number): number {
@@ -202,6 +203,27 @@ export default function KnockoutPage() {
               <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
                 stroke="var(--border)" strokeWidth={1.5} />
             ))}
+            {/* Dashed connectors from SF losers to 3rd place */}
+            {(() => {
+              const sf1Cy = boxCy(3, 0); // SF1 centre (256px)
+              const sf2Cy = boxCy(3, 1); // SF2 centre (768px)
+              const tpCy  = THIRD_PLACE_TOP + BOX_H / 2; // 3rd place centre
+              const sfRx  = boxLeft(3) + BOX_W;           // right edge of SF column
+              const midX  = sfRx + COL_GAP / 2;           // midpoint x
+              const tpLx  = boxLeft(4);                    // left edge of Final column
+              return (
+                <>
+                  {/* SF1 loser → 3rd place (dashed) */}
+                  <line x1={sfRx} y1={sf1Cy} x2={midX} y2={sf1Cy} stroke="var(--border)" strokeWidth={1.5} strokeDasharray="4 3" />
+                  <line x1={midX} y1={sf1Cy} x2={midX} y2={tpCy}  stroke="var(--border)" strokeWidth={1.5} strokeDasharray="4 3" />
+                  {/* SF2 loser → 3rd place (dashed) */}
+                  <line x1={sfRx} y1={sf2Cy} x2={midX} y2={sf2Cy} stroke="var(--border)" strokeWidth={1.5} strokeDasharray="4 3" />
+                  <line x1={midX} y1={sf2Cy} x2={midX} y2={tpCy}  stroke="var(--border)" strokeWidth={1.5} strokeDasharray="4 3" />
+                  {/* Horizontal from midpoint to 3rd place box */}
+                  <line x1={midX} y1={tpCy} x2={tpLx} y2={tpCy} stroke="var(--border)" strokeWidth={1.5} strokeDasharray="4 3" />
+                </>
+              );
+            })()}
           </svg>
 
           {/* Match boxes – all 31 bracket slots */}
@@ -248,6 +270,45 @@ export default function KnockoutPage() {
               );
             });
           })}
+
+          {/* 3rd place label */}
+          <span
+            style={{
+              position: 'absolute',
+              top: THIRD_PLACE_TOP - 18,
+              left: boxLeft(4),
+              width: BOX_W,
+              textAlign: 'center',
+              fontSize: 11,
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              color: 'var(--text)',
+            }}
+          >
+            3rd place
+          </span>
+
+          {/* 3rd place match box */}
+          <div
+            style={{
+              position: 'absolute',
+              top: THIRD_PLACE_TOP,
+              left: boxLeft(4),
+              width: BOX_W,
+              height: BOX_H,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+            className="bracket-box"
+          >
+            <div className="bracket-team">
+              <span className="bracket-team-name">SF1 loser</span>
+            </div>
+            <div className="bracket-team">
+              <span className="bracket-team-name">SF2 loser</span>
+            </div>
+          </div>
 
         </div>
       </div>
