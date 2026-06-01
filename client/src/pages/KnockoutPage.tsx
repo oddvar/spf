@@ -269,7 +269,7 @@ export default function KnockoutPage() {
           </p>
           <h1>Knockout Stage</h1>
           <p className="predictions-subtitle">
-            Click a team to pick them as the winner. No draws in the knockout stage.
+            Click a team to pick them as the winner. Please note that if you go back and change the previous predictions, it might change your knockout stage predictions as well!
           </p>
         </div>
       </div>
