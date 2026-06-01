@@ -76,7 +76,7 @@ router.put('/predictions/:matchId', requireAuth, async (req: AuthRequest, res: R
 
   await pool.execute(
     `UPDATE users SET match${match_number} = ?, ${clearBestThirds} WHERE id = ?`,
-    [prediction, req.userId],
+    [prediction, req.userId!],
   );
 
   res.json({ matchId, prediction });
