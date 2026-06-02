@@ -4,7 +4,6 @@ import { pool } from '../db.js';
 
 export interface AuthRequest extends Request {
   userId?: string;
-  username?: string;
 }
 
 async function hasRecentLogin(userId: string): Promise<boolean> {
@@ -24,7 +23,7 @@ export async function requireAuth(req: AuthRequest, res: Response, next: NextFun
   }
 
   try {
-    const payload = jwt.verify(header.slice(7), process.env.JWT_SECRET!) as { id: string; username: string };
+    const payload = jwt.verify(header.slice(7), process.env.JWT_SECRET!) as { id: string };
 
     if (!(await hasRecentLogin(payload.id))) {
       res.status(401).json({ error: 'Session expired, please log in again' });
@@ -32,7 +31,6 @@ export async function requireAuth(req: AuthRequest, res: Response, next: NextFun
     }
 
     req.userId = payload.id;
-    req.username = payload.username;
     next();
   } catch {
     res.status(401).json({ error: 'Invalid or expired token' });
@@ -43,10 +41,9 @@ export async function optionalAuth(req: AuthRequest, _res: Response, next: NextF
   const header = req.headers.authorization;
   if (header?.startsWith('Bearer ')) {
     try {
-      const payload = jwt.verify(header.slice(7), process.env.JWT_SECRET!) as { id: string; username: string };
+      const payload = jwt.verify(header.slice(7), process.env.JWT_SECRET!) as { id: string };
       if (await hasRecentLogin(payload.id)) {
         req.userId = payload.id;
-        req.username = payload.username;
       }
     } catch {
       // invalid token — proceed unauthenticated

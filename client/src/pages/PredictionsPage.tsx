@@ -96,7 +96,6 @@ export default function PredictionsPage() {
     <div className="predictions-page">
       <div className="predictions-header">
         <div>
-          <p className="predictions-greeting">Hello, {firstName} {lastName}</p>
           <h1>Group stage predictions</h1>
           <p className="predictions-subtitle">
             Pick <strong>H</strong>ome win, <strong>D</strong>raw, or <strong>A</strong>way win for each match. Please note that changing these predictions will reset the best thirds selections on the next page.

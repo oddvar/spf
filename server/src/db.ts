@@ -33,7 +33,6 @@ export async function initDb(): Promise<void> {
   await pool.execute(`
     CREATE TABLE IF NOT EXISTS users (
       id              CHAR(36)      PRIMARY KEY,
-      username        VARCHAR(50)   UNIQUE NOT NULL,
       first_name      VARCHAR(100)  NOT NULL,
       last_name       VARCHAR(100)  NOT NULL,
       email           VARCHAR(255)  UNIQUE NOT NULL,
@@ -45,6 +44,9 @@ export async function initDb(): Promise<void> {
     )
   `);
 
+  if (await columnExists('users', 'username')) {
+    await pool.execute(`ALTER TABLE users DROP COLUMN username`);
+  }
   if (!(await columnExists('users', 'active'))) {
     await pool.execute(`ALTER TABLE users ADD COLUMN active TINYINT(1) NOT NULL DEFAULT 1`);
   }

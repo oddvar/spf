@@ -35,7 +35,7 @@ function Nav() {
         <Link to="/help">Help</Link>
       </div>
       <div className="nav-right">
-        <button className="nav-logout" onClick={logout}>Log out</button>
+        <button className="nav-logout" onClick={logout}>Log out ({localStorage.getItem('firstName')} {localStorage.getItem('lastName')})</button>
       </div>
     </nav>
   );

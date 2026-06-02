@@ -89,9 +89,6 @@ export default function BestThirdsPage() {
     <div className="predictions-page">
       <div className="predictions-header">
         <div>
-          <p className="predictions-greeting">
-            {localStorage.getItem('firstName')} {localStorage.getItem('lastName')}
-          </p>
           <h1>Group tables and best third-placed teams</h1>
           <p className="predictions-subtitle">
             These are the tables based on your group match predictions. Select the <strong>{REQUIRED}</strong> third-placed teams who will advance to the Round of 32.

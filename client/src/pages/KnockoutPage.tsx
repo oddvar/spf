@@ -271,9 +271,6 @@ export default function KnockoutPage() {
     <div className="predictions-page">
       <div className="predictions-header">
         <div>
-          <p className="predictions-greeting">
-            {localStorage.getItem('firstName')} {localStorage.getItem('lastName')}
-          </p>
           <h1>Knockout stage predictions</h1>
           <p className="predictions-subtitle">
             Click a team to pick them as the winner of that match. Please note that if you go back and change the previous predictions, this might change your knockout stage predictions as well!

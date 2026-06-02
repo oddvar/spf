@@ -14,10 +14,9 @@ function isValidEmail(email: string): boolean {
 }
 
 router.post('/register', async (req: Request, res: Response) => {
-  const { username, firstName, lastName, email, password, paymentStatus } = req.body as Record<string, string>;
+  const { firstName, lastName, email, password, paymentStatus } = req.body as Record<string, string>;
 
   const requiredFields: [string, string][] = [
-    ['username', username],
     ['firstName', firstName],
     ['lastName', lastName],
     ['email', email],
@@ -52,19 +51,15 @@ router.post('/register', async (req: Request, res: Response) => {
 
   try {
     await pool.execute(
-      `INSERT INTO users (id, username, first_name, last_name, email, password_hash, payment_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [id, username.trim(), firstName.trim(), lastName.trim(), email.trim(), passwordHash, paymentStatus],
+      `INSERT INTO users (id, first_name, last_name, email, password_hash, payment_status)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [id, firstName.trim(), lastName.trim(), email.trim(), passwordHash, paymentStatus],
     );
-    res.status(201).json({ id, username: username.trim(), email: email.trim() });
+    res.status(201).json({ id, email: email.trim() });
   } catch (err: unknown) {
     const mysqlErr = err as { code?: string; message?: string };
     if (mysqlErr.code === 'ER_DUP_ENTRY') {
-      if (mysqlErr.message?.includes('username')) {
-        res.status(409).json({ error: 'Username is already taken' });
-      } else {
-        res.status(409).json({ error: 'An account with this email already exists' });
-      }
+      res.status(409).json({ error: 'An account with this email already exists' });
       return;
     }
     console.error('Register error:', err);
@@ -88,7 +83,6 @@ router.post('/login', async (req: Request, res: Response) => {
     const [rows] = await pool.execute('SELECT * FROM users WHERE email = ?', [email.trim()]);
     const users = rows as Array<{
       id: string;
-      username: string;
       first_name: string;
       last_name: string;
       email: string;
@@ -113,7 +107,7 @@ router.post('/login', async (req: Request, res: Response) => {
     const secret = process.env.JWT_SECRET;
     if (!secret) throw new Error('JWT_SECRET not set');
 
-    const token = jwt.sign({ id: user.id, username: user.username }, secret, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user.id}, secret, { expiresIn: '7d' });
 
     await pool.execute(`UPDATE users SET last_login = NOW() WHERE id = ?`, [user.id]);
 
@@ -121,7 +115,6 @@ router.post('/login', async (req: Request, res: Response) => {
       token,
       user: {
         id: user.id,
-        username: user.username,
         firstName: user.first_name,
         lastName: user.last_name,
         email: user.email,

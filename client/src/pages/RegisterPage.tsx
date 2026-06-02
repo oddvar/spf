@@ -8,7 +8,6 @@ type PaymentStatus = 'NO' | 'WANTS_TO_PAY' | 'HAS_PAID';
 interface FormFields {
   firstName: string;
   lastName: string;
-  username: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -22,7 +21,6 @@ function validate(fields: FormFields): FieldErrors {
 
   if (!fields.firstName.trim()) errors.firstName = 'First name is required';
   if (!fields.lastName.trim()) errors.lastName = 'Last name is required';
-  if (!fields.username.trim()) errors.username = 'Username is required';
   if (!fields.email.trim()) {
     errors.email = 'Email is required';
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) {
@@ -112,15 +110,6 @@ export default function RegisterPage() {
             onChange={(v) => updateField('lastName', v)}
           />
         </div>
-
-        <Field
-          label="Username"
-          id="username"
-          value={fields.username}
-          error={fieldErrors.username}
-          onChange={(v) => updateField('username', v)}
-          autoComplete="username"
-        />
 
         <Field
           label="Email"
