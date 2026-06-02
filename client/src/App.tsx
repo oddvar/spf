@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import PredictionsPage from './pages/PredictionsPage';
 import BestThirdsPage from './pages/BestThirdsPage';
 import KnockoutPage from './pages/KnockoutPage';
+import HelpPage from './pages/HelpPage';
 import './App.css';
 
 function isLoggedIn(): boolean {
@@ -31,6 +32,7 @@ function Nav() {
       <span className="nav-brand">SPF 2026</span>
       <div className="nav-center">
         <Link to="/predictions">Predictions</Link>
+        <Link to="/help">Help</Link>
       </div>
       <div className="nav-right">
         <button className="nav-logout" onClick={logout}>Log out</button>
@@ -70,6 +72,15 @@ export default function App() {
             <ProtectedRoute>
               <Nav />
               <KnockoutPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/help"
+          element={
+            <ProtectedRoute>
+              <Nav />
+              <HelpPage />
             </ProtectedRoute>
           }
         />

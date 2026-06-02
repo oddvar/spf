@@ -135,6 +135,11 @@ export async function seedMatches(): Promise<void> {
     }
     console.log('Backfilled match locations');
   }
+
+  // Rename venues that have changed naming rights
+  await pool.execute(
+    `UPDATE matches SET location = 'Estadio Azteca, Mexico City' WHERE location = 'Estadio Banorte, Mexico City'`,
+  );
 }
 
 const KO_MATCHES = [

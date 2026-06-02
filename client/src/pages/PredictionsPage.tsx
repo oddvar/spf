@@ -1,6 +1,7 @@
 import { useState, useEffect, useTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { get, put, ApiError } from '../api/client';
+import { VENUE_LINKS } from '../utils/venues';
 
 type Prediction = 'H' | 'D' | 'A';
 type SortMode = 'group' | 'date';
@@ -152,7 +153,9 @@ export default function PredictionsPage() {
                   <span className="vs">vs</span>
                   <span className="team away">{match.away_team}</span>
                   {match.location && (
-                    <span className="match-location">{match.location}</span>
+                    VENUE_LINKS[match.location]
+                      ? <a className="match-location" href={VENUE_LINKS[match.location]} target="_blank" rel="noopener noreferrer">{match.location}</a>
+                      : <span className="match-location">{match.location}</span>
                   )}
                 </div>
                 <div className="prediction-btns" aria-label={`Prediction for ${match.home_team} vs ${match.away_team}`}>
