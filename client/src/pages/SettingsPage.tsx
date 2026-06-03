@@ -117,11 +117,14 @@ export default function SettingsPage() {
 
   return (
     <div className="predictions-page">
-      <div className="predictions-header">
+      <div className="predictions-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '20px' }}>
         <div>
           <h1>Settings</h1>
           <p className="predictions-subtitle">Update your account information</p>
         </div>
+        <button type="button" className="btn-secondary" onClick={logout} style={{ marginTop: '8px' }}>
+          Log Out
+        </button>
       </div>
 
       <form action={submitAction} className="settings-form">
@@ -248,14 +251,9 @@ export default function SettingsPage() {
 
         {formError && <p className={formError.includes('success') ? 'form-success' : 'form-error'}>{formError}</p>}
 
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button type="submit" className="btn-primary" disabled={isPending}>
-            {isPending ? 'Saving…' : 'Save Settings'}
-          </button>
-          <button type="button" className="btn-secondary" onClick={logout}>
-            Log Out
-          </button>
-        </div>
+        <button type="submit" className="btn-primary" disabled={isPending}>
+          {isPending ? 'Saving…' : 'Save Settings'}
+        </button>
       </form>
     </div>
   );

@@ -16,8 +16,29 @@ function isLoggedIn(): boolean {
 
 function useTheme() {
   useEffect(() => {
-    const theme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', theme);
+    const loadTheme = async () => {
+      const isLoggedIn = !!localStorage.getItem('token');
+
+      if (isLoggedIn) {
+        try {
+          const response = await fetch('/api/settings', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+          });
+          if (response.ok) {
+            const data = await response.json() as { theme: 'light' | 'dark' };
+            localStorage.setItem('theme', data.theme);
+            document.documentElement.setAttribute('data-theme', data.theme);
+            return;
+          }
+        } catch {}
+      }
+
+      // Fallback to localStorage or default
+      const theme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+    };
+
+    loadTheme();
   }, []);
 }
 
