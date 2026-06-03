@@ -82,6 +82,19 @@ export default function HelpPage() {
           </tbody>
         </table>
       </section>
+
+      <section className="help-section">
+        <h2>Winning</h2>
+        <p>
+          Out of everyone who chose to pay, the person with the highest number of points at the end of the World Cup is the winner!
+        </p>
+        <p>
+          The winner receives <strong>75% of the total money paid</strong>, and the person with the second-most points receives <strong>25% as a consolation prize</strong>.
+        </p>
+        <p>
+          If multiple people tie for the highest points, they split the prize (and there is no consolation prize). If multiple people tie for second place, they split the consolation prize.
+        </p>
+      </section>
     </div>
   );
 }
