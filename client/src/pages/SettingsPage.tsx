@@ -44,7 +44,12 @@ export default function SettingsPage() {
       get<{ matches: any[]; canEdit: boolean }>('/matches'),
     ])
       .then(([settingsData, matchData]) => {
-        setSettings(settingsData);
+        setSettings({
+          ...settingsData,
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+        });
         setCanEdit(matchData.canEdit);
         setLoading(false);
       })
