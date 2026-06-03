@@ -276,7 +276,7 @@ export default function KnockoutPage() {
             Click a team to pick them as the winner of that match. Please note that if you go back and change the previous predictions, this might change your knockout stage predictions as well!
           </p>
           <p className="predictions-subtitle">
-            Make sure you fill predictions for all the matches, including the winner of the final and the third-place match! If you are on mobile you might need to scroll to the right.
+            Make sure you predict all the matches, including the winner of the final and the third-place match! If you are on mobile you might need to scroll to the right.
           </p>
         </div>
       </div>
