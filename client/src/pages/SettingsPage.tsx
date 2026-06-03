@@ -78,7 +78,7 @@ export default function SettingsPage() {
       }
 
       try {
-        const updated = await put<UserSettings>('/settings', {
+        await put<UserSettings>('/settings', {
           firstName: settings.firstName,
           lastName: settings.lastName,
           email: settings.email,
@@ -89,19 +89,14 @@ export default function SettingsPage() {
         });
         setSettings((prev) => ({
           ...prev,
-          firstName: updated.firstName,
-          lastName: updated.lastName,
-          email: updated.email,
-          paymentStatus: updated.paymentStatus,
-          theme: updated.theme,
           currentPassword: '',
           newPassword: '',
           confirmPassword: '',
         }));
-        localStorage.setItem('firstName', updated.firstName);
-        localStorage.setItem('lastName', updated.lastName);
-        localStorage.setItem('theme', updated.theme);
-        document.documentElement.setAttribute('data-theme', updated.theme);
+        localStorage.setItem('firstName', settings.firstName);
+        localStorage.setItem('lastName', settings.lastName);
+        localStorage.setItem('theme', settings.theme);
+        document.documentElement.setAttribute('data-theme', settings.theme);
 
         // Refetch canEdit in case it changed
         try {
@@ -165,16 +160,31 @@ export default function SettingsPage() {
         </div>
 
         <div className="field">
-          <label htmlFor="paymentStatus">Payment Status</label>
-          <select
-            id="paymentStatus"
-            value={settings.paymentStatus}
-            onChange={(e) => setSettings({ ...settings, paymentStatus: e.target.value as 'NO' | 'WANTS_TO_PAY' | 'HAS_PAID' })}
-            disabled={isPending || !canEdit || settings.paymentStatus === 'HAS_PAID'}
-          >
-            <option value="NO">I'm not entering the paid competition</option>
-            <option value="WANTS_TO_PAY">I want to join — I'll pay soon</option>
-          </select>
+          <label>Payment Status</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: isPending || (!canEdit && settings.paymentStatus !== 'HAS_PAID') ? 'not-allowed' : 'pointer', opacity: isPending || (!canEdit && settings.paymentStatus !== 'HAS_PAID') ? 0.5 : 1 }}>
+              <input
+                type="radio"
+                name="paymentStatus"
+                value="NO"
+                checked={settings.paymentStatus === 'NO'}
+                onChange={(e) => setSettings({ ...settings, paymentStatus: e.target.value as 'NO' | 'WANTS_TO_PAY' })}
+                disabled={isPending || (!canEdit && settings.paymentStatus !== 'HAS_PAID')}
+              />
+              <span>I'm not entering the paid competition</span>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: isPending || !canEdit ? 'not-allowed' : 'pointer', opacity: isPending || !canEdit ? 0.5 : 1 }}>
+              <input
+                type="radio"
+                name="paymentStatus"
+                value="WANTS_TO_PAY"
+                checked={settings.paymentStatus === 'WANTS_TO_PAY'}
+                onChange={(e) => setSettings({ ...settings, paymentStatus: e.target.value as 'NO' | 'WANTS_TO_PAY' })}
+                disabled={isPending || !canEdit}
+              />
+              <span>I want to join — I'll pay soon</span>
+            </label>
+          </div>
           {!canEdit && (
             <p style={{ fontSize: '13px', color: 'var(--text)', marginTop: '8px', padding: '8px 0' }}>
               The competition has now started.
