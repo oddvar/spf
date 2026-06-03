@@ -7,6 +7,7 @@ import authRouter from './routes/auth.js';
 import predictionsRouter from './routes/predictions.js';
 import bestThirdsRouter from './routes/bestThirds.js';
 import knockoutRouter from './routes/knockout.js';
+import settingsRouter from './routes/settings.js';
 
 const app = express();
 const PORT = Number(process.env.PORT ?? 3001);
@@ -22,6 +23,7 @@ app.use('/api/auth', authRouter);
 app.use('/api', predictionsRouter);
 app.use('/api', bestThirdsRouter);
 app.use('/api', knockoutRouter);
+app.use('/api', settingsRouter);
 
 initDb()
   .then(seedMatches)

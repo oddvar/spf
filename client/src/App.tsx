@@ -1,10 +1,12 @@
-import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
 import PredictionsPage from './pages/PredictionsPage';
 import BestThirdsPage from './pages/BestThirdsPage';
 import KnockoutPage from './pages/KnockoutPage';
 import HelpPage from './pages/HelpPage';
+import SettingsPage from './pages/SettingsPage';
+import avatarIcon from './assets/avatar.png';
 import './App.css';
 
 function isLoggedIn(): boolean {
@@ -17,16 +19,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function Nav() {
-  const navigate = useNavigate();
-
-  function logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('firstName');
-    localStorage.removeItem('lastName');
-    localStorage.removeItem('canEdit');
-    navigate('/login');
-  }
-
   return (
     <nav className="main-nav">
       <span className="nav-brand">SPF 2026</span>
@@ -35,7 +27,9 @@ function Nav() {
         <Link to="/help">Help</Link>
       </div>
       <div className="nav-right">
-        <button className="nav-logout" onClick={logout}>Log out ({localStorage.getItem('firstName')} {localStorage.getItem('lastName')})</button>
+        <Link to="/settings" className="nav-avatar">
+          <img src={avatarIcon} alt="Settings" title="Settings" />
+        </Link>
       </div>
     </nav>
   );
@@ -81,6 +75,15 @@ export default function App() {
             <ProtectedRoute>
               <Nav />
               <HelpPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Nav />
+              <SettingsPage />
             </ProtectedRoute>
           }
         />

@@ -52,8 +52,26 @@
   padding: 0;
 }
 
-.nav-logout:hover {
-  color: var(--accent);
+.nav-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--accent-bg);
+  transition: background 0.15s;
+}
+
+.nav-avatar:hover {
+  background: var(--accent);
+}
+
+.nav-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* Predictions */
@@ -615,6 +633,10 @@ form {
   gap: 16px;
 }
 
+.settings-form {
+  max-width: 500px;
+}
+
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -649,6 +671,28 @@ form {
 .field input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.field select {
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 15px;
+  font-family: var(--sans);
+  color: var(--text-h);
+  background: var(--bg);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+
+.field select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.field select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .field--error input {
