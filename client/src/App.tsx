@@ -43,7 +43,7 @@ function Nav() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/spf">
       <Routes>
         <Route path="/" element={<Navigate to="/predictions" replace />} />
         <Route path="/login" element={<LoginPage />} />
