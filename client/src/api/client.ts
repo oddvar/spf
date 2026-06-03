@@ -1,4 +1,4 @@
-const BASE = '/spf/api';
+const BASE = '/api';
 
 function getToken(): string | null {
   return localStorage.getItem('token');
