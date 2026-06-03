@@ -1,12 +1,14 @@
 /* Nav */
 .main-nav {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  height: 52px;
+  min-height: 52px;
   border-bottom: 1px solid var(--border);
   position: relative;
+  gap: 8px;
 }
 
 .nav-brand {
@@ -17,11 +19,14 @@
 }
 
 .nav-center {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
+  left: auto;
+  transform: none;
   display: flex;
   gap: 20px;
+  width: 100%;
+  justify-content: center;
+  order: 3;
 }
 
 .nav-center a {
@@ -233,7 +238,7 @@ a.match-location:hover {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  transition: background 0.12s, border-color 0.12s;
 }
 
 .pred-btn:hover:not(:disabled) {
@@ -244,7 +249,11 @@ a.match-location:hover {
 .pred-btn--selected {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: #fff !important;
+}
+
+.pred-btn--selected::before {
+  display: none;
 }
 
 .pred-readonly {
@@ -428,7 +437,8 @@ a.match-location:hover {
 }
 
 .qualifier-row td {
-  background: var(--accent-bg);
+  background: var(--accent);
+  color: #fff;
 }
 
 .non-qualifier-row td {
@@ -441,7 +451,7 @@ a.match-location:hover {
   transition: background 0.12s;
 }
 
-.third-row:hover:not(.third-row--disabled) td {
+.third-row:hover:not(.third-row--disabled):not(.third-row--selected) td {
   background: var(--accent-bg);
 }
 
