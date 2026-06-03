@@ -51,6 +51,17 @@ export default function PredictionsPage() {
       });
   }, []);
 
+  useEffect(() => {
+    get<{ theme: 'light' | 'dark' }>('/settings')
+      .then(({ theme }) => {
+        localStorage.setItem('theme', theme);
+        document.documentElement.setAttribute('data-theme', theme);
+      })
+      .catch(() => {
+        // Silently fail and use localStorage theme
+      });
+  }, []);
+
   function predict(matchId: number, prediction: Prediction) {
     setMatches((prev) => prev.map((m) => (m.id === matchId ? { ...m, prediction } : m)));
     setSavingId(matchId);
