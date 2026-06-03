@@ -46,7 +46,6 @@ export default function RegisterPage() {
   const [fields, setFields] = useState<FormFields>({
     firstName: '',
     lastName: '',
-    username: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -72,7 +71,6 @@ export default function RegisterPage() {
         await post('/auth/register', {
           firstName: fields.firstName.trim(),
           lastName: fields.lastName.trim(),
-          username: fields.username.trim(),
           email: fields.email.trim(),
           password: fields.password,
           paymentStatus: fields.paymentStatus,

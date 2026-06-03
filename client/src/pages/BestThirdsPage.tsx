@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { get, put, ApiError } from '../api/client';
-import { orderedStandings, applyCustomOrder, loadCustomOrders, type GroupMatch, type Standing, type CustomOrders } from '../utils/standings';
+import { orderedStandings, loadCustomOrders, type GroupMatch, type Standing, type CustomOrders } from '../utils/standings';
 
 const GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'] as const;
 const REQUIRED = 8;

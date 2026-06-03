@@ -81,7 +81,7 @@ router.put('/knockout/third', requireAuth, async (req: AuthRequest, res: Respons
     return;
   }
 
-  await pool.execute(`UPDATE users SET ko32 = ? WHERE id = ?`, [prediction, req.userId]);
+  await pool.execute(`UPDATE users SET ko32 = ? WHERE id = ?`, [prediction, req.userId!]);
   res.json({ prediction });
 });
 
@@ -99,7 +99,7 @@ router.put('/knockout/final', requireAuth, async (req: AuthRequest, res: Respons
     return;
   }
 
-  await pool.execute(`UPDATE users SET ko31 = ? WHERE id = ?`, [prediction, req.userId]);
+  await pool.execute(`UPDATE users SET ko31 = ? WHERE id = ?`, [prediction, req.userId!]);
   res.json({ prediction });
 });
 
@@ -128,7 +128,7 @@ router.put('/knockout/:matchId', requireAuth, async (req: AuthRequest, res: Resp
   }
   const { ko_number } = (rows as Array<{ ko_number: number }>)[0];
 
-  await pool.execute(`UPDATE users SET ko${ko_number} = ? WHERE id = ?`, [prediction, req.userId]);
+  await pool.execute(`UPDATE users SET ko${ko_number} = ? WHERE id = ?`, [prediction, req.userId!]);
   res.json({ matchId, prediction });
 });
 
@@ -152,7 +152,7 @@ router.put('/knockout/r16/:pairIdx', requireAuth, async (req: AuthRequest, res: 
   }
 
   const colNum = 17 + pairIdx;
-  await pool.execute(`UPDATE users SET ko${colNum} = ? WHERE id = ?`, [prediction, req.userId]);
+  await pool.execute(`UPDATE users SET ko${colNum} = ? WHERE id = ?`, [prediction, req.userId!]);
   res.json({ pairIdx, prediction });
 });
 
@@ -175,7 +175,7 @@ router.put('/knockout/sf/:pairIdx', requireAuth, async (req: AuthRequest, res: R
     return;
   }
 
-  await pool.execute(`UPDATE users SET ko${29 + pairIdx} = ? WHERE id = ?`, [prediction, req.userId]);
+  await pool.execute(`UPDATE users SET ko${29 + pairIdx} = ? WHERE id = ?`, [prediction, req.userId!]);
   res.json({ pairIdx, prediction });
 });
 
@@ -199,7 +199,7 @@ router.put('/knockout/qf/:pairIdx', requireAuth, async (req: AuthRequest, res: R
   }
 
   const colNum = 25 + pairIdx;
-  await pool.execute(`UPDATE users SET ko${colNum} = ? WHERE id = ?`, [prediction, req.userId]);
+  await pool.execute(`UPDATE users SET ko${colNum} = ? WHERE id = ?`, [prediction, req.userId!]);
   res.json({ pairIdx, prediction });
 });
 

@@ -71,8 +71,6 @@ export default function PredictionsPage() {
     });
   }
 
-  const firstName = localStorage.getItem('firstName') ?? '';
-  const lastName = localStorage.getItem('lastName') ?? '';
 
   if (loading) return <div className="predictions-loading">Loading matches…</div>;
   if (error) return <div className="predictions-loading">{error}</div>;
