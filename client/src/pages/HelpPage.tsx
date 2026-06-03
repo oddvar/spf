@@ -95,6 +95,26 @@ export default function HelpPage() {
           If multiple people tie for the highest points, they split the prize (and there is no consolation prize). If multiple people tie for second place, they split the consolation prize.
         </p>
       </section>
+
+      <section className="help-section">
+        <h2>Payment</h2>
+        <p>
+          This competition has both free and paid entry options. You can choose whether to participate in the paid competition when you register.
+        </p>
+        <p>
+          If you select <strong>"I want to join — I'll pay soon"</strong>, please transfer 100 NOK to account number 9710 5671 052.
+        </p>
+        <p>
+          Only participants who chose to pay are eligible for the prize pool (75% to the winner, 25% to the runner-up).
+        </p>
+      </section>
+
+      <section className="help-section">
+        <h2>Questions?</h2>
+        <p>
+          If you have any questions about the competition, the predictions, or a bug report, please feel free to email <a href="mailto:oddvar@geheb.com" className="help-link">the administrator</a>.
+        </p>
+      </section>
     </div>
   );
 }

@@ -82,7 +82,8 @@ export default function SettingsPage() {
           currentPassword: settings.currentPassword || undefined,
           newPassword: settings.newPassword || undefined,
         });
-        setSettings({
+        setSettings((prev) => ({
+          ...prev,
           firstName: updated.firstName,
           lastName: updated.lastName,
           email: updated.email,
@@ -90,9 +91,16 @@ export default function SettingsPage() {
           currentPassword: '',
           newPassword: '',
           confirmPassword: '',
-        });
+        }));
         localStorage.setItem('firstName', updated.firstName);
         localStorage.setItem('lastName', updated.lastName);
+
+        // Refetch canEdit in case it changed
+        try {
+          const matchData = await get<{ matches: any[]; canEdit: boolean }>('/matches');
+          setCanEdit(matchData.canEdit);
+        } catch {}
+
         return 'Settings saved successfully!';
       } catch (err) {
         if (err instanceof ApiError) return err.message;

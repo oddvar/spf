@@ -542,6 +542,17 @@ a.match-location:hover {
   margin-bottom: 4px;
 }
 
+.help-link {
+  color: var(--accent);
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.help-link:hover {
+  opacity: 0.88;
+  text-decoration: underline;
+}
+
 .help-scoring-table {
   width: 100%;
   border-collapse: collapse;
