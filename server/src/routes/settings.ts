@@ -14,10 +14,10 @@ function isValidEmail(email: string): boolean {
 
 router.get('/settings', requireAuth, async (req: AuthRequest, res: Response) => {
   const [rows] = await pool.execute(
-    `SELECT first_name, last_name, email, payment_status FROM users WHERE id = ?`,
+    `SELECT first_name, last_name, email, payment_status, theme FROM users WHERE id = ?`,
     [req.userId!],
   );
-  const user = (rows as Array<{ first_name: string; last_name: string; email: string; payment_status: PaymentStatus }>)[0];
+  const user = (rows as Array<{ first_name: string; last_name: string; email: string; payment_status: PaymentStatus; theme: 'light' | 'dark' }>)[0];
 
   if (!user) {
     res.status(404).json({ error: 'User not found' });
@@ -29,11 +29,12 @@ router.get('/settings', requireAuth, async (req: AuthRequest, res: Response) => 
     lastName: user.last_name,
     email: user.email,
     paymentStatus: user.payment_status,
+    theme: user.theme,
   });
 });
 
 router.put('/settings', requireAuth, async (req: AuthRequest, res: Response) => {
-  const { firstName, lastName, email, paymentStatus, currentPassword, newPassword } = req.body as Record<string, string>;
+  const { firstName, lastName, email, paymentStatus, theme, currentPassword, newPassword } = req.body as Record<string, string>;
 
   if (!firstName || !firstName.trim()) {
     res.status(400).json({ error: 'First name is required' });
@@ -53,6 +54,10 @@ router.put('/settings', requireAuth, async (req: AuthRequest, res: Response) => 
   }
   if (!paymentStatus || !PAYMENT_STATUSES.includes(paymentStatus as PaymentStatus)) {
     res.status(400).json({ error: 'Invalid payment status' });
+    return;
+  }
+  if (!theme || !['light', 'dark'].includes(theme)) {
+    res.status(400).json({ error: 'Invalid theme' });
     return;
   }
 
@@ -87,13 +92,13 @@ router.put('/settings', requireAuth, async (req: AuthRequest, res: Response) => 
 
     if (newPasswordHash) {
       await pool.execute(
-        `UPDATE users SET first_name = ?, last_name = ?, email = ?, payment_status = ?, password_hash = ? WHERE id = ?`,
-        [firstName.trim(), lastName.trim(), email.trim(), paymentStatus, newPasswordHash, req.userId!],
+        `UPDATE users SET first_name = ?, last_name = ?, email = ?, payment_status = ?, theme = ?, password_hash = ? WHERE id = ?`,
+        [firstName.trim(), lastName.trim(), email.trim(), paymentStatus, theme, newPasswordHash, req.userId!],
       );
     } else {
       await pool.execute(
-        `UPDATE users SET first_name = ?, last_name = ?, email = ?, payment_status = ? WHERE id = ?`,
-        [firstName.trim(), lastName.trim(), email.trim(), paymentStatus, req.userId!],
+        `UPDATE users SET first_name = ?, last_name = ?, email = ?, payment_status = ?, theme = ? WHERE id = ?`,
+        [firstName.trim(), lastName.trim(), email.trim(), paymentStatus, theme, req.userId!],
       );
     }
 
@@ -102,6 +107,7 @@ router.put('/settings', requireAuth, async (req: AuthRequest, res: Response) => 
       lastName: lastName.trim(),
       email: email.trim(),
       paymentStatus,
+      theme,
     });
   } catch (err: unknown) {
     const mysqlErr = err as { code?: string; message?: string };

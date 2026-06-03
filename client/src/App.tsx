@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
@@ -11,6 +12,13 @@ import './App.css';
 
 function isLoggedIn(): boolean {
   return !!localStorage.getItem('token');
+}
+
+function useTheme() {
+  useEffect(() => {
+    const theme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+  }, []);
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -35,59 +43,67 @@ function Nav() {
   );
 }
 
+function AppRoutes() {
+  useTheme();
+
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/predictions" replace />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route
+        path="/predictions"
+        element={
+          <ProtectedRoute>
+            <Nav />
+            <PredictionsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/best-thirds"
+        element={
+          <ProtectedRoute>
+            <Nav />
+            <BestThirdsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/knockout"
+        element={
+          <ProtectedRoute>
+            <Nav />
+            <KnockoutPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/help"
+        element={
+          <ProtectedRoute>
+            <Nav />
+            <HelpPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Nav />
+            <SettingsPage />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter basename="/spf">
-      <Routes>
-        <Route path="/" element={<Navigate to="/predictions" replace />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route
-          path="/predictions"
-          element={
-            <ProtectedRoute>
-              <Nav />
-              <PredictionsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/best-thirds"
-          element={
-            <ProtectedRoute>
-              <Nav />
-              <BestThirdsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/knockout"
-          element={
-            <ProtectedRoute>
-              <Nav />
-              <KnockoutPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/help"
-          element={
-            <ProtectedRoute>
-              <Nav />
-              <HelpPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <Nav />
-              <SettingsPage />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
+      <AppRoutes />
     </BrowserRouter>
   );
 }

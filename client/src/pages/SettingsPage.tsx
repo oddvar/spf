@@ -7,6 +7,7 @@ interface UserSettings {
   lastName: string;
   email: string;
   paymentStatus: 'NO' | 'WANTS_TO_PAY' | 'HAS_PAID';
+  theme: 'light' | 'dark';
   canEdit?: boolean;
 }
 
@@ -23,6 +24,7 @@ export default function SettingsPage() {
     lastName: '',
     email: '',
     paymentStatus: 'NO',
+    theme: 'light',
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
@@ -51,6 +53,8 @@ export default function SettingsPage() {
           confirmPassword: '',
         });
         setCanEdit(matchData.canEdit);
+        localStorage.setItem('theme', settingsData.theme);
+        document.documentElement.setAttribute('data-theme', settingsData.theme);
         setLoading(false);
       })
       .catch(() => {
@@ -79,6 +83,7 @@ export default function SettingsPage() {
           lastName: settings.lastName,
           email: settings.email,
           paymentStatus: settings.paymentStatus,
+          theme: settings.theme,
           currentPassword: settings.currentPassword || undefined,
           newPassword: settings.newPassword || undefined,
         });
@@ -88,12 +93,15 @@ export default function SettingsPage() {
           lastName: updated.lastName,
           email: updated.email,
           paymentStatus: updated.paymentStatus,
+          theme: updated.theme,
           currentPassword: '',
           newPassword: '',
           confirmPassword: '',
         }));
         localStorage.setItem('firstName', updated.firstName);
         localStorage.setItem('lastName', updated.lastName);
+        localStorage.setItem('theme', updated.theme);
+        document.documentElement.setAttribute('data-theme', updated.theme);
 
         // Refetch canEdit in case it changed
         try {
@@ -172,6 +180,19 @@ export default function SettingsPage() {
               The competition has now started.
             </p>
           )}
+        </div>
+
+        <div className="field">
+          <label htmlFor="theme">Theme</label>
+          <select
+            id="theme"
+            value={settings.theme}
+            onChange={(e) => setSettings({ ...settings, theme: e.target.value as 'light' | 'dark' })}
+            disabled={isPending}
+          >
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
         </div>
 
         <hr style={{ margin: '20px 0', border: 'none', borderTop: '1px solid var(--border)' }} />

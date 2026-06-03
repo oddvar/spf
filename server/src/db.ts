@@ -59,6 +59,9 @@ export async function initDb(): Promise<void> {
   if (!(await columnExists('users', 'can_view_others'))) {
     await pool.execute(`ALTER TABLE users ADD COLUMN can_view_others TINYINT(1) NOT NULL DEFAULT 0`);
   }
+  if (!(await columnExists('users', 'theme'))) {
+    await pool.execute(`ALTER TABLE users ADD COLUMN theme ENUM('light', 'dark') NOT NULL DEFAULT 'light'`);
+  }
 
   // Add best-thirds prediction columns (best_third_a…best_third_l)
   if (!(await columnExists('users', 'best_third_a'))) {
