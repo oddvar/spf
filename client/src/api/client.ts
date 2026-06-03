@@ -17,7 +17,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (res.status === 401) {
     localStorage.removeItem('token');
-    window.location.href = '/login';
+    window.location.href = '/spf/login';
     throw new ApiError(401, (data as { error?: string }).error ?? 'Unauthorised');
   }
 
