@@ -203,4 +203,47 @@ router.put('/knockout/qf/:pairIdx', requireAuth, async (req: AuthRequest, res: R
   res.json({ pairIdx, prediction });
 });
 
+router.post('/knockout/save-rendered', requireAuth, async (req: AuthRequest, res: Response) => {
+  const { r32Matches, r16Matches, qfMatches, sfMatches, fMatch, thirdMatch, winner, thirdPlaceWinner } = req.body as {
+    r32Matches?: unknown;
+    r16Matches?: unknown;
+    qfMatches?: unknown;
+    sfMatches?: unknown;
+    fMatch?: unknown;
+    thirdMatch?: unknown;
+    winner?: string;
+    thirdPlaceWinner?: string;
+  };
+
+  try {
+    await pool.execute(
+      `UPDATE users SET
+        ko_r32_matches = ?,
+        ko_r16_matches = ?,
+        ko_qf_matches = ?,
+        ko_sf_matches = ?,
+        ko_f_match = ?,
+        ko_third_match = ?,
+        ko_winner = ?,
+        ko_third_place_winner = ?
+       WHERE id = ?`,
+      [
+        r32Matches ? JSON.stringify(r32Matches) : null,
+        r16Matches ? JSON.stringify(r16Matches) : null,
+        qfMatches ? JSON.stringify(qfMatches) : null,
+        sfMatches ? JSON.stringify(sfMatches) : null,
+        fMatch ? JSON.stringify(fMatch) : null,
+        thirdMatch ? JSON.stringify(thirdMatch) : null,
+        winner || null,
+        thirdPlaceWinner || null,
+        req.userId!,
+      ],
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error saving rendered matches:', err);
+    res.status(500).json({ error: 'Failed to save rendered matches' });
+  }
+});
+
 export default router;

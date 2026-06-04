@@ -1,6 +1,6 @@
 import { useState, useEffect, useTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { get, put, ApiError } from '../api/client';
+import { get, put, post, ApiError } from '../api/client';
 import { resolveSlot, loadCustomOrders, type GroupMatch } from '../utils/standings';
 
 // ─── Layout constants ────────────────────────────────────────────────────────
@@ -89,6 +89,125 @@ export default function KnockoutPage() {
       setLoading(false);
     });
   }, []);
+
+  // Save rendered matches with resolved team names to the database
+  useEffect(() => {
+    if (loading || koMatches.length === 0 || bestThirds.length === 0) return;
+
+    function slot(s: string): string {
+      return resolveSlot(s, groupMatches, bestThirds, customOrders);
+    }
+
+    // Build R32 matches with resolved team names
+    const r32Matches = koMatches.map((m) => ({
+      match_number: m.ko_number,
+      home_team: slot(m.home_team),
+      away_team: slot(m.away_team),
+      prediction: m.prediction,
+    }));
+
+    // Helper functions for calculating winners
+    function r32Winner(koNum: number): string {
+      const m = koMatches.find((x) => x.ko_number === koNum);
+      if (!m?.prediction) return '?';
+      return m.prediction === 'H' ? slot(m.home_team) : slot(m.away_team);
+    }
+
+    function r16Winner(pairIdx: number): string {
+      const pred = r16Preds[pairIdx] as KoPred | null;
+      if (!pred) return '?';
+      return pred === 'H' ? r32Winner(R32[pairIdx * 2]) : r32Winner(R32[pairIdx * 2 + 1]);
+    }
+
+    function qfWinner(pairIdx: number): string {
+      const pred = qfPreds[pairIdx] as KoPred | null;
+      if (!pred) return '?';
+      return pred === 'H' ? r16Winner(pairIdx * 2) : r16Winner(pairIdx * 2 + 1);
+    }
+
+    function sfWinner(pairIdx: number): string {
+      const pred = sfPreds[pairIdx] as KoPred | null;
+      if (!pred) return '?';
+      return pred === 'H' ? qfWinner(pairIdx * 2) : qfWinner(pairIdx * 2 + 1);
+    }
+
+    function sfLoser(pairIdx: number): string {
+      const pred = sfPreds[pairIdx] as KoPred | null;
+      if (!pred) return '?';
+      return pred === 'H' ? qfWinner(pairIdx * 2 + 1) : qfWinner(pairIdx * 2);
+    }
+
+    // Build R16, QF, SF matches
+    const r16Matches = [];
+    for (let i = 0; i < 8; i++) {
+      const homeTeam = r32Winner(R32[i * 2]);
+      const awayTeam = r32Winner(R32[i * 2 + 1]);
+      r16Matches.push({
+        match_number: 17 + i,
+        home_team: homeTeam,
+        away_team: awayTeam,
+        prediction: r16Preds[i] || null,
+      });
+    }
+
+    const qfMatches = [];
+    for (let i = 0; i < 4; i++) {
+      const homeTeam = r16Winner(i * 2);
+      const awayTeam = r16Winner(i * 2 + 1);
+      qfMatches.push({
+        match_number: 25 + i,
+        home_team: homeTeam,
+        away_team: awayTeam,
+        prediction: qfPreds[i] || null,
+      });
+    }
+
+    const sfMatches = [];
+    for (let i = 0; i < 2; i++) {
+      const homeTeam = qfWinner(i * 2);
+      const awayTeam = qfWinner(i * 2 + 1);
+      sfMatches.push({
+        match_number: 29 + i,
+        home_team: homeTeam,
+        away_team: awayTeam,
+        prediction: sfPreds[i] || null,
+      });
+    }
+
+    const fMatch = {
+      match_number: 31,
+      home_team: sfWinner(0),
+      away_team: sfWinner(1),
+      prediction: fPred,
+    };
+
+    const thirdMatch = {
+      match_number: 32,
+      home_team: sfLoser(0),
+      away_team: sfLoser(1),
+      prediction: thirdPred,
+    };
+
+    const winner = fPred === 'H' ? fMatch.home_team : fPred === 'A' ? fMatch.away_team : null;
+    const thirdPlaceWinner = thirdPred === 'H' ? thirdMatch.home_team : thirdPred === 'A' ? thirdMatch.away_team : null;
+
+    // Save to server
+    console.log('Saving rendered matches to server');
+    post('/knockout/save-rendered', {
+      r32Matches,
+      r16Matches,
+      qfMatches,
+      sfMatches,
+      fMatch,
+      thirdMatch,
+      winner,
+      thirdPlaceWinner,
+    }).then(() => {
+      console.log('Successfully saved rendered matches');
+    }).catch((err) => {
+      console.error('Failed to save rendered matches:', err);
+    });
+  }, [koMatches, r16Preds, qfPreds, sfPreds, fPred, thirdPred, groupMatches, bestThirds, customOrders, loading]);
 
   function predictThird(pred: KoPred) {
     setThirdPred(pred);

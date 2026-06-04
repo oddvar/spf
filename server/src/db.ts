@@ -195,4 +195,30 @@ export async function initDb(): Promise<void> {
   await pool.execute(
     `UPDATE matches SET home_team = '1B' WHERE stage = 'r32' AND ko_number = 13 AND home_team = '2B'`,
   );
+
+  // Add columns for knockout stage progression tracking
+  if (!(await columnExists('users', 'ko_r32_matches'))) {
+    await pool.execute(`ALTER TABLE users ADD COLUMN ko_r32_matches JSON NULL COMMENT 'Array of R32 match predictions with teams'`);
+  }
+  if (!(await columnExists('users', 'ko_r16_matches'))) {
+    await pool.execute(`ALTER TABLE users ADD COLUMN ko_r16_matches JSON NULL COMMENT 'Array of R16 match predictions with teams'`);
+  }
+  if (!(await columnExists('users', 'ko_qf_matches'))) {
+    await pool.execute(`ALTER TABLE users ADD COLUMN ko_qf_matches JSON NULL COMMENT 'Array of QF match predictions with teams'`);
+  }
+  if (!(await columnExists('users', 'ko_sf_matches'))) {
+    await pool.execute(`ALTER TABLE users ADD COLUMN ko_sf_matches JSON NULL COMMENT 'Array of SF match predictions with teams'`);
+  }
+  if (!(await columnExists('users', 'ko_f_match'))) {
+    await pool.execute(`ALTER TABLE users ADD COLUMN ko_f_match JSON NULL COMMENT 'Final match prediction with teams'`);
+  }
+  if (!(await columnExists('users', 'ko_third_match'))) {
+    await pool.execute(`ALTER TABLE users ADD COLUMN ko_third_match JSON NULL COMMENT '3rd place match prediction with teams'`);
+  }
+  if (!(await columnExists('users', 'ko_winner'))) {
+    await pool.execute(`ALTER TABLE users ADD COLUMN ko_winner VARCHAR(100) NULL`);
+  }
+  if (!(await columnExists('users', 'ko_third_place_winner'))) {
+    await pool.execute(`ALTER TABLE users ADD COLUMN ko_third_place_winner VARCHAR(100) NULL`);
+  }
 }
