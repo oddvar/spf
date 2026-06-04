@@ -155,7 +155,7 @@ const KO_MATCHES = [
   { n: 10, home: '1D',      away: '3BEFIJ',  date: '2026-07-01', time: '20:00', location: "Levi's Stadium, Santa Clara" },
   { n: 11, home: '1H',      away: '2J',      date: '2026-07-02', time: '15:00', location: 'SoFi Stadium, Inglewood' },
   { n: 12, home: '2K',      away: '2L',      date: '2026-07-02', time: '19:00', location: 'BMO Field, Toronto' },
-  { n: 13, home: '2B',      away: '3EFGIJ',  date: '2026-07-02', time: '23:00', location: 'BC Place, Vancouver' },
+  { n: 13, home: '1B',      away: '3EFGIJ',  date: '2026-07-02', time: '23:00', location: 'BC Place, Vancouver' },
   { n: 14, home: '2D',      away: '2G',      date: '2026-07-03', time: '14:00', location: 'AT&T Stadium, Arlington' },
   { n: 15, home: '1J',      away: '2H',      date: '2026-07-03', time: '18:00', location: 'Hard Rock Stadium, Miami Gardens' },
   { n: 16, home: '1K',      away: '3DEIJL',  date: '2026-07-03', time: '21:30', location: 'Arrowhead Stadium, Kansas City' },

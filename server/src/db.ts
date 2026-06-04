@@ -190,4 +190,9 @@ export async function initDb(): Promise<void> {
   if ((gnRows as Array<{ IS_NULLABLE: string }>)[0]?.IS_NULLABLE === 'NO') {
     await pool.execute(`ALTER TABLE matches MODIFY COLUMN group_name CHAR(1) NULL`);
   }
+
+  // Fix knockout match 13: first team should be 1B (winner group B), not 2B
+  await pool.execute(
+    `UPDATE matches SET home_team = '1B' WHERE stage = 'r32' AND ko_number = 13 AND home_team = '2B'`,
+  );
 }
