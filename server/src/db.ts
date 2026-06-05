@@ -221,4 +221,14 @@ export async function initDb(): Promise<void> {
   if (!(await columnExists('users', 'ko_third_place_winner'))) {
     await pool.execute(`ALTER TABLE users ADD COLUMN ko_third_place_winner VARCHAR(100) NULL`);
   }
+
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS shouts (
+      id        INT          PRIMARY KEY AUTO_INCREMENT,
+      user_id   CHAR(36)     NOT NULL,
+      comment   TEXT         NOT NULL,
+      created_at TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
 }

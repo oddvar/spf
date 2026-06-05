@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
@@ -7,6 +7,7 @@ import BestThirdsPage from './pages/BestThirdsPage';
 import KnockoutPage from './pages/KnockoutPage';
 import HelpPage from './pages/HelpPage';
 import SettingsPage from './pages/SettingsPage';
+import ShoutsPage from './pages/ShoutsPage';
 import avatarIcon from './assets/avatar.png';
 import './App.css';
 
@@ -47,13 +48,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function Nav() {
+function Nav({ showShouts }: { showShouts: boolean }) {
   return (
     <nav className="main-nav">
       <span className="nav-brand">SPF 2026</span>
       <div className="nav-center">
         <Link to="/predictions">Predictions</Link>
         <Link to="/help">Help</Link>
+        {showShouts && <Link to="/shouts">Shouts</Link>}
       </div>
       <div className="nav-right">
         <Link to="/settings" className="nav-avatar">
@@ -66,6 +68,28 @@ function Nav() {
 
 function AppRoutes() {
   useTheme();
+  const [showShouts, setShowShouts] = useState(false);
+
+  useEffect(() => {
+    const fetchCanEdit = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const res = await fetch('/api/matches', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json() as { canEdit: boolean };
+          setShowShouts(!data.canEdit);
+        }
+      } catch {
+        // Silently fail, default to not showing shouts
+      }
+    };
+
+    fetchCanEdit();
+  }, []);
 
   return (
     <Routes>
@@ -76,7 +100,7 @@ function AppRoutes() {
         path="/predictions"
         element={
           <ProtectedRoute>
-            <Nav />
+            <Nav showShouts={showShouts} />
             <PredictionsPage />
           </ProtectedRoute>
         }
@@ -85,7 +109,7 @@ function AppRoutes() {
         path="/best-thirds"
         element={
           <ProtectedRoute>
-            <Nav />
+            <Nav showShouts={showShouts} />
             <BestThirdsPage />
           </ProtectedRoute>
         }
@@ -94,7 +118,7 @@ function AppRoutes() {
         path="/knockout"
         element={
           <ProtectedRoute>
-            <Nav />
+            <Nav showShouts={showShouts} />
             <KnockoutPage />
           </ProtectedRoute>
         }
@@ -103,7 +127,7 @@ function AppRoutes() {
         path="/help"
         element={
           <ProtectedRoute>
-            <Nav />
+            <Nav showShouts={showShouts} />
             <HelpPage />
           </ProtectedRoute>
         }
@@ -112,8 +136,17 @@ function AppRoutes() {
         path="/settings"
         element={
           <ProtectedRoute>
-            <Nav />
+            <Nav showShouts={showShouts} />
             <SettingsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/shouts"
+        element={
+          <ProtectedRoute>
+            <Nav showShouts={showShouts} />
+            {showShouts ? <ShoutsPage /> : <Navigate to="/predictions" replace />}
           </ProtectedRoute>
         }
       />
