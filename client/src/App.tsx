@@ -55,9 +55,9 @@ function Nav({ showShouts }: { showShouts: boolean }) {
       <span className="nav-brand">SPF 2026</span>
       <div className="nav-center">
         <Link to="/predictions">Predictions</Link>
-        <Link to="/help">Help</Link>
         {showShouts && <Link to="/today">Today</Link>}
         {showShouts && <Link to="/shouts">Shouts</Link>}
+        <Link to="/help">Help</Link>
       </div>
       <div className="nav-right">
         <Link to="/settings" className="nav-avatar">
