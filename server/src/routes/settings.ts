@@ -14,10 +14,10 @@ function isValidEmail(email: string): boolean {
 
 router.get('/settings', requireAuth, async (req: AuthRequest, res: Response) => {
   const [rows] = await pool.execute(
-    `SELECT first_name, last_name, email, payment_status, theme FROM users WHERE id = ?`,
+    `SELECT first_name, last_name, email, payment_status, theme, can_view_others FROM users WHERE id = ?`,
     [req.userId!],
   );
-  const user = (rows as Array<{ first_name: string; last_name: string; email: string; payment_status: PaymentStatus; theme: 'light' | 'dark' }>)[0];
+  const user = (rows as Array<{ first_name: string; last_name: string; email: string; payment_status: PaymentStatus; theme: 'light' | 'dark'; can_view_others: number }>)[0];
 
   if (!user) {
     res.status(404).json({ error: 'User not found' });
@@ -30,6 +30,7 @@ router.get('/settings', requireAuth, async (req: AuthRequest, res: Response) => 
     email: user.email,
     paymentStatus: user.payment_status,
     theme: user.theme,
+    can_view_others: !!user.can_view_others,
   });
 });
 

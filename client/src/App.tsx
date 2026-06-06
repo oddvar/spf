@@ -8,6 +8,7 @@ import KnockoutPage from './pages/KnockoutPage';
 import HelpPage from './pages/HelpPage';
 import SettingsPage from './pages/SettingsPage';
 import ShoutsPage from './pages/ShoutsPage';
+import TodayPage from './pages/TodayPage';
 import avatarIcon from './assets/avatar.png';
 import './App.css';
 
@@ -55,6 +56,7 @@ function Nav({ showShouts }: { showShouts: boolean }) {
       <div className="nav-center">
         <Link to="/predictions">Predictions</Link>
         <Link to="/help">Help</Link>
+        {showShouts && <Link to="/today">Today</Link>}
         {showShouts && <Link to="/shouts">Shouts</Link>}
       </div>
       <div className="nav-right">
@@ -71,24 +73,24 @@ function AppRoutes() {
   const [showShouts, setShowShouts] = useState(false);
 
   useEffect(() => {
-    const fetchCanEdit = async () => {
+    const fetchCanViewOthers = async () => {
       try {
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        const res = await fetch('/api/matches', {
+        const res = await fetch('/api/settings', {
           headers: { 'Authorization': `Bearer ${token}` },
         });
         if (res.ok) {
-          const data = await res.json() as { canEdit: boolean };
-          setShowShouts(!data.canEdit);
+          const data = await res.json() as { can_view_others?: boolean };
+          setShowShouts(!!data.can_view_others);
         }
       } catch {
         // Silently fail, default to not showing shouts
       }
     };
 
-    fetchCanEdit();
+    fetchCanViewOthers();
   }, []);
 
   return (
@@ -138,6 +140,15 @@ function AppRoutes() {
           <ProtectedRoute>
             <Nav showShouts={showShouts} />
             <SettingsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/today"
+        element={
+          <ProtectedRoute>
+            <Nav showShouts={showShouts} />
+            {showShouts ? <TodayPage /> : <Navigate to="/predictions" replace />}
           </ProtectedRoute>
         }
       />

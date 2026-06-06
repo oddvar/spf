@@ -1,0 +1,201 @@
+import { useState, useEffect } from 'react';
+import { get } from '../api/client';
+
+interface UserPrediction {
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  prediction: 'H' | 'A' | 'D' | null;
+}
+
+interface Match {
+  id: number;
+  match_number: number | null;
+  ko_number: number | null;
+  home_team: string;
+  away_team: string;
+  match_datetime: string;
+  location: string | null;
+  stage: string | null;
+  predictions: UserPrediction[];
+}
+
+export default function TodayPage() {
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    setLoading(true);
+    setError('');
+    get<Match[]>(`/today?date=${date}`)
+      .then(setMatches)
+      .catch((err) => {
+        console.error('Failed to fetch matches:', err);
+        setError('Failed to load matches');
+      })
+      .finally(() => setLoading(false));
+  }, [date]);
+
+  const matchTime = (datetime: string) => {
+    return new Date(datetime).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'America/New_York',
+    });
+  };
+
+  return (
+    <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
+      <h1>Today's matches</h1>
+
+      <div style={{ marginBottom: '2rem' }}>
+        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+          Select Date:
+        </label>
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          style={{ padding: '0.5rem', fontSize: '1rem' }}
+        />
+      </div>
+
+      {error && <div style={{ color: '#cc0000', marginBottom: '1rem' }}>{error}</div>}
+
+      {loading ? (
+        <p>Loading matches...</p>
+      ) : matches.length === 0 ? (
+        <p>No matches scheduled for this date.</p>
+      ) : (
+        <div>
+          {matches.map((match) => (
+            <div
+              key={match.id}
+              style={{
+                marginBottom: '2rem',
+                border: '1px solid var(--border)',
+                borderRadius: '8px',
+                padding: '1.5rem',
+                backgroundColor: 'var(--bg-secondary)',
+              }}
+            >
+              <div style={{ marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                  {match.stage === 'r32' ? 'Round of 32' : match.stage === 'r16' ? 'Round of 16' : match.stage === 'qf' ? 'Quarter-final' : match.stage === 'sf' ? 'Semi-final' : match.stage === 'f' ? 'Final' : 'Group Stage'} • {matchTime(match.match_datetime)}
+                  {match.location && ` • ${match.location}`}
+                </div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>
+                  {match.home_team} <span style={{ color: 'var(--text-secondary)' }}>vs</span> {match.away_team}
+                </div>
+              </div>
+
+              {match.predictions.length === 0 ? (
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>No predictions yet</p>
+              ) : match.match_number ? (
+                // Group stage match: show in three columns (H, D, A)
+                <div>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.75rem', color: 'var(--text-secondary)' }}>
+                    {match.predictions.length} prediction{match.predictions.length !== 1 ? 's' : ''}:
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                    {(['H', 'D', 'A'] as const).map((predType) => {
+                      const predictions = match.predictions.filter((p) => p.prediction === predType);
+                      return (
+                        <div key={predType}>
+                          <div
+                            style={{
+                              fontSize: '0.75rem',
+                              fontWeight: 'bold',
+                              textTransform: 'uppercase',
+                              color: 'var(--text-secondary)',
+                              marginBottom: '0.5rem',
+                              paddingBottom: '0.5rem',
+                              borderBottom: '2px solid var(--border)',
+                            }}
+                          >
+                            {predType === 'H' ? 'Home' : predType === 'D' ? 'Draw' : 'Away'} ({predictions.length})
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            {predictions.length === 0 ? (
+                              <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>—</span>
+                            ) : (
+                              predictions.map((pred) => (
+                                <div
+                                  key={pred.user_id}
+                                  style={{
+                                    padding: '0.5rem',
+                                    backgroundColor: 'var(--bg)',
+                                    borderRadius: '4px',
+                                    border: '1px solid var(--border)',
+                                    fontSize: '0.875rem',
+                                  }}
+                                >
+                                  {pred.first_name} {pred.last_name}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                // Knockout match: show in two columns (H, A)
+                <div>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.75rem', color: 'var(--text-secondary)' }}>
+                    {match.predictions.length} prediction{match.predictions.length !== 1 ? 's' : ''}:
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    {(['H', 'A'] as const).map((predType) => {
+                      const predictions = match.predictions.filter((p) => p.prediction === predType);
+                      return (
+                        <div key={predType}>
+                          <div
+                            style={{
+                              fontSize: '0.75rem',
+                              fontWeight: 'bold',
+                              textTransform: 'uppercase',
+                              color: 'var(--text-secondary)',
+                              marginBottom: '0.5rem',
+                              paddingBottom: '0.5rem',
+                              borderBottom: '2px solid var(--border)',
+                            }}
+                          >
+                            {predType === 'H' ? 'Home' : 'Away'} ({predictions.length})
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            {predictions.length === 0 ? (
+                              <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>—</span>
+                            ) : (
+                              predictions.map((pred) => (
+                                <div
+                                  key={pred.user_id}
+                                  style={{
+                                    padding: '0.5rem',
+                                    backgroundColor: 'var(--bg)',
+                                    borderRadius: '4px',
+                                    border: '1px solid var(--border)',
+                                    fontSize: '0.875rem',
+                                  }}
+                                >
+                                  {pred.first_name} {pred.last_name}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
