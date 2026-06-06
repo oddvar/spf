@@ -161,16 +161,110 @@ const KO_MATCHES = [
   { n: 16, home: '1K',      away: '3DEIJL',  date: '2026-07-03', time: '21:30', location: 'Arrowhead Stadium, Kansas City' },
 ];
 
-export async function seedKnockoutMatches(): Promise<void> {
-  const [rows] = await pool.execute(`SELECT COUNT(*) as count FROM matches WHERE stage = 'r32'`);
-  if ((rows as Array<{ count: number }>)[0].count > 0) return;
+const KO_R16_MATCHES = [
+  { ko_num: 17, home: 'Winner 73', away: 'Winner 75', date: '2026-07-04', time: '12:00', location: 'Philadelphia' },
+  { ko_num: 18, home: 'Winner 74', away: 'Winner 77', date: '2026-07-04', time: '16:00', location: 'Houston' },
+  { ko_num: 19, home: 'Winner 76', away: 'Winner 78', date: '2026-07-04', time: '20:00', location: 'Arlington' },
+  { ko_num: 20, home: 'Winner 79', away: 'Winner 80', date: '2026-07-05', time: '12:00', location: 'Mexico City' },
+  { ko_num: 21, home: 'Winner 81', away: 'Winner 82', date: '2026-07-05', time: '16:00', location: 'Seattle' },
+  { ko_num: 22, home: 'Winner 83', away: 'Winner 84', date: '2026-07-05', time: '20:00', location: 'Arlington' },
+  { ko_num: 23, home: 'Winner 85', away: 'Winner 87', date: '2026-07-06', time: '12:00', location: 'Kansas City' },
+  { ko_num: 24, home: 'Winner 86', away: 'Winner 88', date: '2026-07-06', time: '16:00', location: 'Arlington' },
+];
 
-  for (const m of KO_MATCHES) {
-    await pool.execute(
-      `INSERT INTO matches (home_team, away_team, match_datetime, location, stage, ko_number)
-       VALUES (?, ?, ?, ?, 'r32', ?)`,
-      [m.home, m.away, toUtcDatetime(m.date, m.time), m.location, m.n],
-    );
+const KO_QF_MATCHES = [
+  { ko_num: 25, home: 'Winner 89', away: 'Winner 90', date: '2026-07-09', time: '16:00', location: 'Philadelphia' },
+  { ko_num: 26, home: 'Winner 91', away: 'Winner 92', date: '2026-07-10', time: '16:00', location: 'Inglewood' },
+  { ko_num: 27, home: 'Winner 93', away: 'Winner 94', date: '2026-07-10', time: '20:00', location: 'Atlanta' },
+  { ko_num: 28, home: 'Winner 95', away: 'Winner 96', date: '2026-07-11', time: '16:00', location: 'Kansas City' },
+];
+
+const KO_SF_MATCHES = [
+  { ko_num: 29, home: 'Winner 97', away: 'Winner 98', date: '2026-07-14', time: '20:00', location: 'Arlington' },
+  { ko_num: 30, home: 'Winner 99', away: 'Winner 100', date: '2026-07-15', time: '20:00', location: 'Atlanta' },
+];
+
+const KO_FINAL = [
+  { ko_num: 31, home: 'Winner 101', away: 'Winner 102', date: '2026-07-19', time: '16:00', location: 'East Rutherford' },
+];
+
+const KO_THIRD_PLACE = [
+  { ko_num: 32, home: 'Loser 101', away: 'Loser 102', date: '2026-07-18', time: '16:00', location: 'Miami Gardens' },
+];
+
+export async function seedKnockoutMatches(): Promise<void> {
+  const [r32Rows] = await pool.execute(`SELECT COUNT(*) as count FROM matches WHERE stage = 'r32'`);
+  const hasR32 = (r32Rows as Array<{ count: number }>)[0].count > 0;
+
+  if (!hasR32) {
+    for (const m of KO_MATCHES) {
+      await pool.execute(
+        `INSERT INTO matches (home_team, away_team, match_datetime, location, stage, ko_number)
+         VALUES (?, ?, ?, ?, 'r32', ?)`,
+        [m.home, m.away, toUtcDatetime(m.date, m.time), m.location, m.n],
+      );
+    }
+    console.log('Seeded 16 Round of 32 matches');
   }
-  console.log('Seeded 16 Round of 32 matches');
+
+  // Seed later stages if they don't exist
+  const [r16Rows] = await pool.execute(`SELECT COUNT(*) as count FROM matches WHERE stage = 'r16'`);
+  if ((r16Rows as Array<{ count: number }>)[0].count === 0) {
+    for (const m of KO_R16_MATCHES) {
+      await pool.execute(
+        `INSERT INTO matches (home_team, away_team, match_datetime, location, stage, ko_number)
+         VALUES (?, ?, ?, ?, 'r16', ?)`,
+        [m.home, m.away, toUtcDatetime(m.date, m.time), m.location, m.ko_num],
+      );
+    }
+    console.log('Seeded 8 Round of 16 matches');
+  }
+
+  const [qfRows] = await pool.execute(`SELECT COUNT(*) as count FROM matches WHERE stage = 'qf'`);
+  if ((qfRows as Array<{ count: number }>)[0].count === 0) {
+    for (const m of KO_QF_MATCHES) {
+      await pool.execute(
+        `INSERT INTO matches (home_team, away_team, match_datetime, location, stage, ko_number)
+         VALUES (?, ?, ?, ?, 'qf', ?)`,
+        [m.home, m.away, toUtcDatetime(m.date, m.time), m.location, m.ko_num],
+      );
+    }
+    console.log('Seeded 4 Quarter-final matches');
+  }
+
+  const [sfRows] = await pool.execute(`SELECT COUNT(*) as count FROM matches WHERE stage = 'sf'`);
+  if ((sfRows as Array<{ count: number }>)[0].count === 0) {
+    for (const m of KO_SF_MATCHES) {
+      await pool.execute(
+        `INSERT INTO matches (home_team, away_team, match_datetime, location, stage, ko_number)
+         VALUES (?, ?, ?, ?, 'sf', ?)`,
+        [m.home, m.away, toUtcDatetime(m.date, m.time), m.location, m.ko_num],
+      );
+    }
+    console.log('Seeded 2 Semi-final matches');
+  }
+
+  const [fRows] = await pool.execute(`SELECT COUNT(*) as count FROM matches WHERE stage = 'f'`);
+  if ((fRows as Array<{ count: number }>)[0].count === 0) {
+    for (const m of KO_FINAL) {
+      await pool.execute(
+        `INSERT INTO matches (home_team, away_team, match_datetime, location, stage, ko_number)
+         VALUES (?, ?, ?, ?, 'f', ?)`,
+        [m.home, m.away, toUtcDatetime(m.date, m.time), m.location, m.ko_num],
+      );
+    }
+    console.log('Seeded 1 Final match');
+  }
+
+  const [tpRows] = await pool.execute(`SELECT COUNT(*) as count FROM matches WHERE stage = 'tp'`);
+  if ((tpRows as Array<{ count: number }>)[0].count === 0) {
+    for (const m of KO_THIRD_PLACE) {
+      await pool.execute(
+        `INSERT INTO matches (home_team, away_team, match_datetime, location, stage, ko_number)
+         VALUES (?, ?, ?, ?, 'tp', ?)`,
+        [m.home, m.away, toUtcDatetime(m.date, m.time), m.location, m.ko_num],
+      );
+    }
+    console.log('Seeded 1 Third place match');
+  }
 }
