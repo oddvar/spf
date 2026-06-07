@@ -47,10 +47,11 @@ export default function TodayPage() {
   }, [date]);
 
   const matchTime = (datetime: string) => {
+    const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     return new Date(datetime).toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
-      timeZone: 'America/New_York',
+      timeZone: userTimeZone,
     });
   };
 
