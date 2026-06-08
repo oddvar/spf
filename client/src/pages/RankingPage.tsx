@@ -14,6 +14,7 @@ interface UserRanking {
   thirdPlaceScore: number;
   winnerScore: number;
   totalScore: number;
+  maxPossibleScore: number;
 }
 
 export default function RankingPage() {
@@ -56,6 +57,7 @@ export default function RankingPage() {
               <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>3rd</th>
               <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>Winner</th>
               <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', color: 'var(--accent)' }}>Total</th>
+              <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Max</th>
             </tr>
           </thead>
           <tbody>
@@ -78,6 +80,9 @@ export default function RankingPage() {
                   <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.winnerScore}</td>
                   <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold', color: 'var(--accent)' }}>
                     {user.totalScore}
+                  </td>
+                  <td style={{ padding: '0.5rem', textAlign: 'right', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    {user.maxPossibleScore}
                   </td>
                 </tr>
               );

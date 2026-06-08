@@ -17,6 +17,7 @@ interface UserRanking {
   thirdPlaceScore: number;
   winnerScore: number;
   totalScore: number;
+  maxPossibleScore: number;
 }
 
 router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
@@ -38,6 +39,68 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       res.status(500).json({ error: 'Reference user not found' });
       return;
     }
+
+    // Calculate max possible score based on oddvar's predictions
+    let maxGroupStageScore = 0;
+    let maxR32Score = 0;
+    let maxR16Score = 0;
+    let maxQFScore = 0;
+    let maxSFScore = 0;
+    let maxFinalScore = 0;
+    let maxThirdPlaceScore = 0;
+    let maxWinnerScore = 0;
+
+    // Count group stage predictions
+    for (let i = 1; i <= 72; i++) {
+      if (oddvarData[`match${i}`]) {
+        maxGroupStageScore += 1;
+      }
+    }
+
+    // Count R32 predictions
+    for (let i = 1; i <= 16; i++) {
+      if (oddvarData[`ko${i}`]) {
+        maxR32Score += 2;
+      }
+    }
+
+    // Count R16 predictions
+    for (let i = 17; i <= 24; i++) {
+      if (oddvarData[`ko${i}`]) {
+        maxR16Score += 3;
+      }
+    }
+
+    // Count QF predictions
+    for (let i = 25; i <= 28; i++) {
+      if (oddvarData[`ko${i}`]) {
+        maxQFScore += 4;
+      }
+    }
+
+    // Count SF predictions
+    for (let i = 29; i <= 30; i++) {
+      if (oddvarData[`ko${i}`]) {
+        maxSFScore += 5;
+      }
+    }
+
+    // Final
+    if (oddvarData.ko31) {
+      maxFinalScore = 6;
+    }
+
+    // Third place
+    if (oddvarData.ko32) {
+      maxThirdPlaceScore = 7;
+    }
+
+    // Winner
+    if (oddvarData.ko_winner) {
+      maxWinnerScore = 15;
+    }
+
+    const totalMaxPossibleScore = maxGroupStageScore + maxR32Score + maxR16Score + maxQFScore + maxSFScore + maxFinalScore + maxThirdPlaceScore + maxWinnerScore;
 
     const rankings: UserRanking[] = [];
 
@@ -127,6 +190,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
         thirdPlaceScore,
         winnerScore,
         totalScore,
+        maxPossibleScore: totalMaxPossibleScore,
       });
     }
 
