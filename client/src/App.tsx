@@ -9,6 +9,7 @@ import HelpPage from './pages/HelpPage';
 import SettingsPage from './pages/SettingsPage';
 import ShoutsPage from './pages/ShoutsPage';
 import TodayPage from './pages/TodayPage';
+import RankingPage from './pages/RankingPage';
 import avatarIcon from './assets/avatar.png';
 import './App.css';
 
@@ -56,6 +57,7 @@ function Nav({ showShouts }: { showShouts: boolean }) {
       <div className="nav-center">
         <Link to="/predictions">Predictions</Link>
         {showShouts && <Link to="/today">Today</Link>}
+        {showShouts && <Link to="/ranking">Ranking</Link>}
         {showShouts && <Link to="/shouts">Shouts</Link>}
         <Link to="/help">Help</Link>
       </div>
@@ -149,6 +151,15 @@ function AppRoutes() {
           <ProtectedRoute>
             <Nav showShouts={showShouts} />
             {showShouts ? <TodayPage /> : <Navigate to="/predictions" replace />}
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ranking"
+        element={
+          <ProtectedRoute>
+            <Nav showShouts={showShouts} />
+            {showShouts ? <RankingPage /> : <Navigate to="/predictions" replace />}
           </ProtectedRoute>
         }
       />
