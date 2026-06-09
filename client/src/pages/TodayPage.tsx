@@ -35,6 +35,27 @@ export default function TodayPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    const findNextDateWithMatches = async () => {
+      const today = new Date();
+      for (let i = 0; i < 30; i++) {
+        const checkDate = new Date(today);
+        checkDate.setDate(checkDate.getDate() + i);
+        const dateStr = checkDate.toISOString().split('T')[0];
+        try {
+          const matchesForDate = await get<Match[]>(`/today?date=${dateStr}`);
+          if (matchesForDate.length > 0) {
+            setDate(dateStr);
+            return;
+          }
+        } catch {
+          // Continue searching
+        }
+      }
+    };
+    findNextDateWithMatches();
+  }, []);
+
+  useEffect(() => {
     setLoading(true);
     setError('');
     get<Match[]>(`/today?date=${date}`)
@@ -57,7 +78,7 @@ export default function TodayPage() {
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
-      <h1>Today's matches</h1>
+      <h1>Next match{matches.length !== 1 ? 'es' : ''}</h1>
 
       <div style={{ marginBottom: '2rem' }}>
         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>

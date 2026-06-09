@@ -50,13 +50,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function Nav({ showShouts }: { showShouts: boolean }) {
+function Nav({ canEdit, showShouts }: { canEdit: boolean; showShouts: boolean }) {
   return (
     <nav className="main-nav">
       <span className="nav-brand">SPF 2026</span>
       <div className="nav-center">
-        <Link to="/predictions">Predictions</Link>
-        {showShouts && <Link to="/today">Today</Link>}
+        {canEdit && <Link to="/predictions">Predictions</Link>}
+        {showShouts && <Link to="/today">Next</Link>}
         {showShouts && <Link to="/ranking">Ranking</Link>}
         {showShouts && <Link to="/shouts">Shouts</Link>}
         <Link to="/help">Help</Link>
@@ -72,10 +72,11 @@ function Nav({ showShouts }: { showShouts: boolean }) {
 
 function AppRoutes() {
   useTheme();
+  const [canEdit, setCanEdit] = useState(false);
   const [showShouts, setShowShouts] = useState(false);
 
   useEffect(() => {
-    const fetchCanViewOthers = async () => {
+    const fetchSettings = async () => {
       try {
         const token = localStorage.getItem('token');
         if (!token) return;
@@ -84,28 +85,35 @@ function AppRoutes() {
           headers: { 'Authorization': `Bearer ${token}` },
         });
         if (res.ok) {
-          const data = await res.json() as { can_view_others?: boolean };
+          const data = await res.json() as { can_edit?: boolean; can_view_others?: boolean };
+          setCanEdit(!!data.can_edit);
           setShowShouts(!!data.can_view_others);
         }
       } catch {
-        // Silently fail, default to not showing shouts
+        // Silently fail, default to not showing features
       }
     };
 
-    fetchCanViewOthers();
+    fetchSettings();
   }, []);
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/predictions" replace />} />
+      <Route path="/" element={<Navigate to={canEdit ? "/predictions" : "/help"} replace />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route
         path="/predictions"
         element={
           <ProtectedRoute>
-            <Nav showShouts={showShouts} />
-            <PredictionsPage />
+            {canEdit ? (
+              <>
+                <Nav canEdit={canEdit} showShouts={showShouts} />
+                <PredictionsPage />
+              </>
+            ) : (
+              <Navigate to="/help" replace />
+            )}
           </ProtectedRoute>
         }
       />
@@ -113,7 +121,7 @@ function AppRoutes() {
         path="/best-thirds"
         element={
           <ProtectedRoute>
-            <Nav showShouts={showShouts} />
+            <Nav canEdit={canEdit} showShouts={showShouts} />
             <BestThirdsPage />
           </ProtectedRoute>
         }
@@ -122,7 +130,7 @@ function AppRoutes() {
         path="/knockout"
         element={
           <ProtectedRoute>
-            <Nav showShouts={showShouts} />
+            <Nav canEdit={canEdit} showShouts={showShouts} />
             <KnockoutPage />
           </ProtectedRoute>
         }
@@ -131,7 +139,7 @@ function AppRoutes() {
         path="/help"
         element={
           <ProtectedRoute>
-            <Nav showShouts={showShouts} />
+            <Nav canEdit={canEdit} showShouts={showShouts} />
             <HelpPage />
           </ProtectedRoute>
         }
@@ -140,7 +148,7 @@ function AppRoutes() {
         path="/settings"
         element={
           <ProtectedRoute>
-            <Nav showShouts={showShouts} />
+            <Nav canEdit={canEdit} showShouts={showShouts} />
             <SettingsPage />
           </ProtectedRoute>
         }
@@ -149,7 +157,7 @@ function AppRoutes() {
         path="/today"
         element={
           <ProtectedRoute>
-            <Nav showShouts={showShouts} />
+            <Nav canEdit={canEdit} showShouts={showShouts} />
             {showShouts ? <TodayPage /> : <Navigate to="/predictions" replace />}
           </ProtectedRoute>
         }
@@ -158,7 +166,7 @@ function AppRoutes() {
         path="/ranking"
         element={
           <ProtectedRoute>
-            <Nav showShouts={showShouts} />
+            <Nav canEdit={canEdit} showShouts={showShouts} />
             {showShouts ? <RankingPage /> : <Navigate to="/predictions" replace />}
           </ProtectedRoute>
         }
@@ -167,7 +175,7 @@ function AppRoutes() {
         path="/shouts"
         element={
           <ProtectedRoute>
-            <Nav showShouts={showShouts} />
+            <Nav canEdit={canEdit} showShouts={showShouts} />
             {showShouts ? <ShoutsPage /> : <Navigate to="/predictions" replace />}
           </ProtectedRoute>
         }
