@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { pool, MATCH_COUNT } from '../db.js';
-import { requireAuth, optionalAuth, AuthRequest } from '../middleware/auth.js';
+import { requireAuth, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -17,7 +17,7 @@ type MatchRow = {
   location: string | null;
 };
 
-router.get('/matches', optionalAuth, async (req: AuthRequest, res: Response) => {
+router.get('/matches', requireAuth, async (req: AuthRequest, res: Response) => {
   const [matches] = await pool.execute(
     'SELECT id, match_number, group_name, home_team, away_team, match_datetime, location FROM matches WHERE stage IS NULL ORDER BY match_datetime',
   );
@@ -27,14 +27,9 @@ router.get('/matches', optionalAuth, async (req: AuthRequest, res: Response) => 
     match_datetime: (m.match_datetime as string).replace(' ', 'T') + 'Z',
   });
 
-  if (!req.userId) {
-    res.json({ matches: (matches as MatchRow[]).map(normalise), canEdit: false });
-    return;
-  }
-
   const [userRows] = await pool.execute(
     `SELECT can_edit, ${PRED_COLS} FROM users WHERE id = ?`,
-    [req.userId],
+    [req.userId!],
   );
   const userData = (userRows as Record<string, string | null | number>[])[0] ?? {};
   const canEdit = !!userData.can_edit;

@@ -4,7 +4,7 @@ import { requireAuth, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
 
-router.get('/shouts', async (_req: AuthRequest, res: Response) => {
+router.get('/shouts', requireAuth, async (_req: AuthRequest, res: Response) => {
   try {
     const [rows] = await pool.execute(
       `SELECT s.id, s.comment, s.created_at, u.first_name, u.last_name
