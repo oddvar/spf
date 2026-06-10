@@ -204,6 +204,12 @@ router.put('/knockout/qf/:pairIdx', requireAuth, async (req: AuthRequest, res: R
 });
 
 router.post('/knockout/save-rendered', requireAuth, async (req: AuthRequest, res: Response) => {
+  const [userRows] = await pool.execute('SELECT can_edit FROM users WHERE id = ?', [req.userId!]);
+  if (!(userRows as Array<{ can_edit: number }>)[0]?.can_edit) {
+    res.status(403).json({ error: 'Predictions are locked for your account' });
+    return;
+  }
+
   const { r32Matches, r16Matches, qfMatches, sfMatches, fMatch, thirdMatch, winner, thirdPlaceWinner } = req.body as {
     r32Matches?: unknown;
     r16Matches?: unknown;
