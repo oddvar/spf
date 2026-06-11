@@ -125,7 +125,7 @@ router.get('/today', requireAuth, async (req: AuthRequest, res: Response) => {
         const [predRows] = await pool.execute(
           `SELECT id, first_name, last_name, ${colName} as prediction
            FROM users
-           WHERE ${colName} IS NOT NULL
+           WHERE ${colName} IS NOT NULL AND active = 1
            ORDER BY first_name, last_name`,
         );
 
@@ -143,7 +143,7 @@ router.get('/today', requireAuth, async (req: AuthRequest, res: Response) => {
         const [predRows] = await pool.execute(
           `SELECT id, first_name, last_name, ${colName} as prediction
            FROM users
-           WHERE ${colName} IS NOT NULL
+           WHERE ${colName} IS NOT NULL AND active = 1
            ORDER BY first_name, last_name`,
         );
 
@@ -187,7 +187,7 @@ router.get('/today', requireAuth, async (req: AuthRequest, res: Response) => {
               const [nextPredRows] = await pool.execute(
                 `SELECT id, first_name, last_name, ${nextColName} as prediction
                  FROM users
-                 WHERE ${nextColName} IS NOT NULL
+                 WHERE ${nextColName} IS NOT NULL AND active = 1
                  ORDER BY first_name, last_name`,
               );
 
