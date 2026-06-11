@@ -3,6 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { get, put, post, ApiError } from '../api/client';
 import { resolveSlot, loadCustomOrders, type GroupMatch } from '../utils/standings';
 
+interface User {
+  id: string;
+  first_name: string;
+  last_name: string;
+}
+
 // ─── Layout constants ────────────────────────────────────────────────────────
 const SLOT   = 64;   // px height per R32 slot
 const BOX_H  = 48;   // px match box height (2 × 24 team rows)
@@ -66,29 +72,85 @@ export default function KnockoutPage() {
   const [groupMatches, setGroupMatches] = useState<GroupMatchFull[]>([]);
   const [bestThirds, setBestThirds] = useState<string[]>([]);
   const [canEdit, setCanEdit] = useState(true);
+  const [canViewOthers, setCanViewOthers] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [savingId, setSavingId] = useState<number | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>(
+    () => localStorage.getItem('selectedUserId') ?? '',
+  );
+
+  const updateSelectedUserId = (userId: string) => {
+    setSelectedUserId(userId);
+    localStorage.setItem('selectedUserId', userId);
+  };
 
   useEffect(() => {
-    Promise.all([
-      get<{ r32Predictions: KoMatch[]; canEdit: boolean; r16Predictions: (string | null)[]; qfPredictions: (string | null)[]; sfPredictions: (string | null)[]; fPredictions: (string | null)[]; thirdPrediction: string | null }>('/knockout/matches'),
-      get<{ matches: GroupMatchFull[]; canEdit: boolean }>('/matches'),
-      get<{ selections: string[] }>('/best-thirds'),
-    ]).then(([ko, group, thirds]) => {
-      setKoMatches(ko.r32Predictions);
-      setR16Preds(ko.r16Predictions);
-      setQfPreds(ko.qfPredictions);
-      setSfPreds(ko.sfPredictions);
-      setFPred(ko.fPredictions[0] ?? null);
-      setThirdPred(ko.thirdPrediction);
-      setCanEdit(ko.canEdit);
-      setGroupMatches(group.matches.filter((m) => m.group_name));
-      setBestThirds(thirds.selections);
-      setLoading(false);
-    });
+    get<{ can_view_others?: boolean }>('/settings')
+      .then(({ can_view_others }) => {
+        setCanViewOthers(!!can_view_others);
+      })
+      .catch(() => {
+        // Silently fail
+      });
   }, []);
+
+  useEffect(() => {
+    if (!canViewOthers) return;
+
+    get<User[]>('/users/list')
+      .then(setUsers)
+      .catch(() => {
+        console.error('Failed to fetch users');
+      });
+  }, [canViewOthers]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (selectedUserId) {
+        // Fetch selected user's knockout predictions
+        try {
+          const ko = await get<any>(`/users/${selectedUserId}/knockout`);
+          setKoMatches(ko.r32Predictions);
+          setCanEdit(false);
+          // Re-fetch group matches and best-thirds for context
+          const [group, thirds] = await Promise.all([
+            get<{ matches: GroupMatchFull[]; canEdit: boolean }>('/matches'),
+            get<{ selections: string[] }>('/best-thirds'),
+          ]);
+          setGroupMatches(group.matches.filter((m) => m.group_name));
+          setBestThirds(thirds.selections);
+          setLoading(false);
+        } catch (err) {
+          console.error('Failed to fetch user knockout predictions:', err);
+        }
+      } else {
+        // Fetch own knockout predictions
+        try {
+          const [ko, group, thirds] = await Promise.all([
+            get<{ r32Predictions: KoMatch[]; canEdit: boolean; r16Predictions: (string | null)[]; qfPredictions: (string | null)[]; sfPredictions: (string | null)[]; fPredictions: (string | null)[]; thirdPrediction: string | null }>('/knockout/matches'),
+            get<{ matches: GroupMatchFull[]; canEdit: boolean }>('/matches'),
+            get<{ selections: string[] }>('/best-thirds'),
+          ]);
+          setKoMatches(ko.r32Predictions);
+          setR16Preds(ko.r16Predictions);
+          setQfPreds(ko.qfPredictions);
+          setSfPreds(ko.sfPredictions);
+          setFPred(ko.fPredictions[0] ?? null);
+          setThirdPred(ko.thirdPrediction);
+          setCanEdit(ko.canEdit);
+          setGroupMatches(group.matches.filter((m) => m.group_name));
+          setBestThirds(thirds.selections);
+          setLoading(false);
+        } catch (err) {
+          console.error('Failed to fetch knockout data:', err);
+        }
+      }
+    };
+    fetchData();
+  }, [selectedUserId]);
 
   // Save rendered matches with resolved team names to the database
   useEffect(() => {
@@ -399,6 +461,25 @@ export default function KnockoutPage() {
           </p>
         </div>
       </div>
+
+      {canViewOthers && users.length > 0 && (
+        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '1rem 2rem', borderBottom: '1px solid var(--border)' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '0.9rem' }}>
+            View predictions for:
+          </label>
+          <select
+            value={selectedUserId}
+            onChange={(e) => updateSelectedUserId(e.target.value)}
+            style={{ padding: '0.5rem', fontSize: '1rem', maxWidth: '300px' }}
+          >
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.first_name} {user.last_name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="predictions-progress">
         <span className="predictions-count">{predicted} / {total} predicted</span>

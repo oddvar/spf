@@ -13,27 +13,74 @@ interface Match extends GroupMatch {
   match_datetime: string;
 }
 
+interface User {
+  id: string;
+  first_name: string;
+  last_name: string;
+}
+
 export default function BestThirdsPage() {
   const navigate = useNavigate();
   const [matches, setMatches] = useState<Match[]>([]);
   const [selections, setSelections] = useState<Set<string>>(new Set());
   const [customOrders, setCustomOrders] = useState<CustomOrders>(() => loadCustomOrders());
   const [canEdit, setCanEdit] = useState(true);
+  const [canViewOthers, setCanViewOthers] = useState(false);
   const [lockedMessage, setLockedMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>(
+    () => localStorage.getItem('selectedUserId') ?? '',
+  );
+
+  const updateSelectedUserId = (userId: string) => {
+    setSelectedUserId(userId);
+    localStorage.setItem('selectedUserId', userId);
+  };
 
   useEffect(() => {
-    Promise.all([
-      get<{ matches: Match[]; canEdit: boolean }>('/matches'),
-      get<{ selections: string[] }>('/best-thirds'),
-    ]).then(([{ matches, canEdit }, { selections }]) => {
-      setMatches(matches);
-      setCanEdit(canEdit);
-      setSelections(new Set(selections));
-      setLoading(false);
-    });
+    get<{ can_view_others?: boolean }>('/settings')
+      .then(({ can_view_others }) => {
+        setCanViewOthers(!!can_view_others);
+      })
+      .catch(() => {
+        // Silently fail
+      });
   }, []);
+
+  useEffect(() => {
+    if (!canViewOthers) return;
+
+    get<User[]>('/users/list')
+      .then(setUsers)
+      .catch(() => {
+        console.error('Failed to fetch users');
+      });
+  }, [canViewOthers]);
+
+  useEffect(() => {
+    if (selectedUserId) {
+      // Fetch selected user's best-thirds
+      get<{ selections: string[]; matches: Match[] }>(`/users/${selectedUserId}/best-thirds`)
+        .then(({ selections, matches }) => {
+          setMatches(matches);
+          setSelections(new Set(selections));
+          setLoading(false);
+        });
+    } else {
+      // Fetch own best-thirds
+      Promise.all([
+        get<{ matches: Match[]; canEdit: boolean }>('/matches'),
+        get<{ selections: string[] }>('/best-thirds'),
+      ]).then(([{ matches, canEdit }, { selections }]) => {
+        setMatches(matches);
+        setCanEdit(canEdit);
+        setSelections(new Set(selections));
+        setLoading(false);
+      });
+    }
+  }, [selectedUserId]);
 
   function getStandings(group: string): Standing[] {
     return orderedStandings(matches, group, customOrders);
@@ -96,6 +143,25 @@ export default function BestThirdsPage() {
           </p>
         </div>
       </div>
+
+      {canViewOthers && users.length > 0 && (
+        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '1rem 2rem', borderBottom: '1px solid var(--border)' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '0.9rem' }}>
+            View selections for:
+          </label>
+          <select
+            value={selectedUserId}
+            onChange={(e) => updateSelectedUserId(e.target.value)}
+            style={{ padding: '0.5rem', fontSize: '1rem', maxWidth: '300px' }}
+          >
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.first_name} {user.last_name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="predictions-progress">
         <span className="predictions-count">{count} / {REQUIRED} selected</span>
@@ -162,13 +228,13 @@ export default function BestThirdsPage() {
                           <td className="st-sort" onClick={(e) => e.stopPropagation()}>
                             <button
                               className="sort-arrow"
-                              disabled={!canMoveUp || !canEdit}
+                              disabled={!canMoveUp || !canEdit || !!selectedUserId}
                               onClick={() => moveTeam(group, standings, i, 'up')}
                               title="Move up"
                             >▲</button>
                             <button
                               className="sort-arrow"
-                              disabled={!canMoveDown || !canEdit}
+                              disabled={!canMoveDown || !canEdit || !!selectedUserId}
                               onClick={() => moveTeam(group, standings, i, 'down')}
                               title="Move down"
                             >▼</button>

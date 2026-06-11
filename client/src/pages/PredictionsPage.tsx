@@ -17,6 +17,12 @@ interface Match {
   prediction: Prediction | null;
 }
 
+interface User {
+  id: string;
+  first_name: string;
+  last_name: string;
+}
+
 const LABELS: Record<Prediction, string> = { H: 'Home', D: 'Draw', A: 'Away' };
 
 
@@ -24,12 +30,22 @@ export default function PredictionsPage() {
   const navigate = useNavigate();
   const [matches, setMatches] = useState<Match[]>([]);
   const [canEdit, setCanEdit] = useState(true);
+  const [canViewOthers, setCanViewOthers] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>(
     () => (localStorage.getItem('sortMode') as SortMode | null) ?? 'date',
   );
+  const [users, setUsers] = useState<User[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>(
+    () => localStorage.getItem('selectedUserId') ?? '',
+  );
+
+  const updateSelectedUserId = (userId: string) => {
+    setSelectedUserId(userId);
+    localStorage.setItem('selectedUserId', userId);
+  };
 
   function updateSortMode(mode: SortMode) {
     setSortMode(mode);
@@ -52,15 +68,39 @@ export default function PredictionsPage() {
   }, []);
 
   useEffect(() => {
-    get<{ theme: 'light' | 'dark' }>('/settings')
-      .then(({ theme }) => {
+    get<{ theme: 'light' | 'dark'; can_view_others?: boolean }>('/settings')
+      .then(({ theme, can_view_others }) => {
         localStorage.setItem('theme', theme);
         document.documentElement.setAttribute('data-theme', theme);
+        setCanViewOthers(!!can_view_others);
       })
       .catch(() => {
         // Silently fail and use localStorage theme
       });
   }, []);
+
+  useEffect(() => {
+    if (!canViewOthers) return;
+
+    get<User[]>('/users/list')
+      .then(setUsers)
+      .catch(() => {
+        console.error('Failed to fetch users');
+      });
+  }, [canViewOthers]);
+
+  useEffect(() => {
+    if (!selectedUserId) return;
+
+    get<{ matches: Match[]; canEdit: boolean }>(`/users/${selectedUserId}/predictions`)
+      .then(({ matches, canEdit }) => {
+        setMatches(matches);
+        setCanEdit(canEdit);
+      })
+      .catch(() => {
+        setError('Failed to load user predictions');
+      });
+  }, [selectedUserId]);
 
   function predict(matchId: number, prediction: Prediction) {
     setMatches((prev) => prev.map((m) => (m.id === matchId ? { ...m, prediction } : m)));
@@ -126,6 +166,25 @@ export default function PredictionsPage() {
         </div>
       </div>
 
+      {canViewOthers && users.length > 0 && (
+        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '1rem 2rem', borderBottom: '1px solid var(--border)' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '0.9rem' }}>
+            View predictions for:
+          </label>
+          <select
+            value={selectedUserId}
+            onChange={(e) => updateSelectedUserId(e.target.value)}
+            style={{ padding: '0.5rem', fontSize: '1rem', maxWidth: '300px' }}
+          >
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.first_name} {user.last_name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {saveError && <p className="form-error">{saveError}</p>}
 
       {(() => {
@@ -181,9 +240,13 @@ export default function PredictionsPage() {
                       </button>
                     ))
                   ) : (
-                    match.prediction
-                      ? <span className="pred-readonly">{match.prediction}</span>
-                      : <span className="pred-readonly pred-readonly--empty">—</span>
+                    <>
+                      {match.prediction ? (
+                        <span className="pred-readonly">{match.prediction}</span>
+                      ) : !selectedUserId ? (
+                        <span className="pred-readonly pred-readonly--empty">—</span>
+                      ) : null}
+                    </>
                   )}
                 </div>
               </div>

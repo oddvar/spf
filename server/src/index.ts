@@ -11,6 +11,7 @@ import settingsRouter from './routes/settings.js';
 import shoutsRouter from './routes/shouts.js';
 import todayRouter from './routes/today.js';
 import rankingRouter from './routes/ranking.js';
+import usersRouter from './routes/users.js';
 
 const app = express();
 const PORT = Number(process.env.PORT ?? 3001);
@@ -30,6 +31,7 @@ app.use('/api', settingsRouter);
 app.use('/api', shoutsRouter);
 app.use('/api', todayRouter);
 app.use('/api', rankingRouter);
+app.use('/api', usersRouter);
 
 initDb()
   .then(seedMatches)
