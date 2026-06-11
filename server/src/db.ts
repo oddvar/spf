@@ -175,6 +175,9 @@ export async function initDb(): Promise<void> {
   if (!(await columnExists('matches', 'ko_number'))) {
     await pool.execute(`ALTER TABLE matches ADD COLUMN ko_number INT NULL`);
   }
+  if (!(await columnExists('matches', 'result'))) {
+    await pool.execute(`ALTER TABLE matches ADD COLUMN result ENUM('H', 'D', 'A') NULL`);
+  }
   // Make match_number and group_name nullable so knockout rows (which have neither) can be inserted
   const [mnRows] = await pool.execute(
     `SELECT IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS

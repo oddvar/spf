@@ -14,6 +14,7 @@ interface Match {
   away_team: string;
   match_datetime: string; // UTC ISO 8601
   location: string | null;
+  result: Prediction | null;
   prediction: Prediction | null;
 }
 
@@ -233,6 +234,9 @@ export default function PredictionsPage() {
                   <span className="team home">{match.home_team}</span>
                   <span className="vs">vs</span>
                   <span className="team away">{match.away_team}</span>
+                  {match.result && (
+                    <span className="match-result" title={LABELS[match.result]}>{match.result}</span>
+                  )}
                   {match.location && (
                     VENUE_LINKS[match.location]
                       ? <a className="match-location" href={VENUE_LINKS[match.location]} target="_blank" rel="noopener noreferrer">{match.location}</a>

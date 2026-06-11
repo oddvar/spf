@@ -20,6 +20,7 @@ interface MatchWithPredictions {
   match_datetime: string;
   location: string | null;
   stage: string | null;
+  result: 'H' | 'D' | 'A' | null;
   predictions: Prediction[];
   nextStageInfo?: {
     nextStagePredictions: {
@@ -65,7 +66,7 @@ router.get('/today', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     // Get all matches for the given date
     const [matchRows] = await pool.execute(
-      `SELECT id, match_number, ko_number, home_team, away_team, match_datetime, location, stage
+      `SELECT id, match_number, ko_number, home_team, away_team, match_datetime, location, stage, result
        FROM matches
        WHERE DATE(match_datetime) = DATE(?)
        ORDER BY match_datetime`,
@@ -249,6 +250,7 @@ router.get('/today', requireAuth, async (req: AuthRequest, res: Response) => {
         match_datetime: (match.match_datetime as string).replace(' ', 'T') + 'Z',
         location: match.location,
         stage: match.stage,
+        result: match.result,
         predictions,
       };
 

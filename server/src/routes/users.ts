@@ -10,7 +10,7 @@ router.get('/users/list', requireAuth, async (req: AuthRequest, res: Response) =
   try {
     const [users] = await pool.execute(
       'SELECT id, first_name, last_name FROM users WHERE id != ? AND email != ? AND active = 1 ORDER BY first_name, last_name',
-      [req.userId, 'oddvar@geheb.com'],
+      [req.userId!, 'oddvar@geheb.com'],
     );
     res.json(users);
   } catch (err) {
@@ -23,7 +23,7 @@ router.get('/users/:userId/predictions', requireAuth, async (req: AuthRequest, r
   try {
     const userId = req.params.userId;
     const [matchRows] = await pool.execute(
-      `SELECT id, match_number, group_name, home_team, away_team, match_datetime, location FROM matches WHERE stage IS NULL ORDER BY match_datetime`,
+      `SELECT id, match_number, group_name, home_team, away_team, match_datetime, location, result FROM matches WHERE stage IS NULL ORDER BY match_datetime`,
     );
 
     const [userRows] = await pool.execute(
@@ -62,7 +62,7 @@ router.get('/users/:userId/best-thirds', requireAuth, async (req: AuthRequest, r
   try {
     const userId = req.params.userId;
     const [matchRows] = await pool.execute(
-      `SELECT id, match_number, group_name, home_team, away_team, match_datetime, location FROM matches WHERE stage IS NULL ORDER BY match_datetime`,
+      `SELECT id, match_number, group_name, home_team, away_team, match_datetime, location, result FROM matches WHERE stage IS NULL ORDER BY match_datetime`,
     );
 
     const [userRows] = await pool.execute(
