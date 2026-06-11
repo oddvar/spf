@@ -79,6 +79,7 @@ router.post('/login', async (req: Request, res: Response) => {
         canEdit: !!user.can_edit,
         canViewOthers: !!user.can_view_others,
       },
+      canViewOthers: !!user.can_view_others,
     });
   } catch (err) {
     console.error('Login error:', err);

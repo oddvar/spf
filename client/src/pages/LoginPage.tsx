@@ -5,6 +5,7 @@ import spfLogo from '../assets/spf.png';
 
 interface LoginResponse {
   token: string;
+  canViewOthers: boolean;
   user: {
     id: string;
     username: string;
@@ -56,6 +57,7 @@ export default function LoginPage() {
       localStorage.setItem('firstName', data.user.firstName);
       localStorage.setItem('lastName', data.user.lastName);
       localStorage.setItem('canEdit', String(data.user.canEdit));
+      localStorage.setItem('canViewOthers', String(data.canViewOthers));
       navigate('/predictions');
     } catch (err) {
       if (err instanceof ApiError) {

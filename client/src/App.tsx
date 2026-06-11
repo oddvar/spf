@@ -83,29 +83,8 @@ function AppRoutes() {
   const [showShouts, setShowShouts] = useState(false);
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-
-        const res = await fetch('/api/settings', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json() as { can_view_others?: boolean };
-          console.log('Settings response:', data);
-          const canViewOthers = !!data.can_view_others;
-          console.log('Setting showShouts to:', canViewOthers);
-          setShowShouts(canViewOthers);
-        } else {
-          console.error('Settings endpoint returned:', res.status);
-        }
-      } catch (err) {
-        console.error('Settings fetch failed:', err);
-      }
-    };
-
-    fetchSettings();
+    const canViewOthers = localStorage.getItem('canViewOthers') === 'true';
+    setShowShouts(canViewOthers);
   }, []);
 
   return (
