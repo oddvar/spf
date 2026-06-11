@@ -95,13 +95,17 @@ export default function PredictionsPage() {
   useEffect(() => {
     if (!selectedUserId) return;
 
+    setLoading(true);
+    setError('');
     get<{ matches: Match[]; canEdit: boolean }>(`/users/${selectedUserId}/predictions`)
       .then(({ matches, canEdit }) => {
         setMatches(matches);
         setCanEdit(canEdit);
+        setLoading(false);
       })
       .catch(() => {
         setError('Failed to load user predictions');
+        setLoading(false);
       });
   }, [selectedUserId]);
 

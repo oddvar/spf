@@ -128,6 +128,7 @@ export default function KnockoutPage() {
           setLoading(false);
         } catch (err) {
           console.error('Failed to fetch user knockout predictions:', err);
+          setLoading(false);
         }
       } else {
         // Fetch own knockout predictions
@@ -149,6 +150,7 @@ export default function KnockoutPage() {
           setLoading(false);
         } catch (err) {
           console.error('Failed to fetch knockout data:', err);
+          setLoading(false);
         }
       }
     };

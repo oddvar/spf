@@ -63,6 +63,7 @@ export default function BestThirdsPage() {
   }, [canViewOthers]);
 
   useEffect(() => {
+    setLoading(true);
     if (selectedUserId) {
       // Fetch selected user's best-thirds
       get<{ selections: string[]; matches: Match[] }>(`/users/${selectedUserId}/best-thirds`)
@@ -70,18 +71,27 @@ export default function BestThirdsPage() {
           setMatches(matches);
           setSelections(new Set(selections));
           setLoading(false);
+        })
+        .catch(() => {
+          console.error('Failed to fetch user best-thirds');
+          setLoading(false);
         });
     } else {
       // Fetch own best-thirds
       Promise.all([
         get<{ matches: Match[]; canEdit: boolean }>('/matches'),
         get<{ selections: string[] }>('/best-thirds'),
-      ]).then(([{ matches, canEdit }, { selections }]) => {
-        setMatches(matches);
-        setCanEdit(canEdit);
-        setSelections(new Set(selections));
-        setLoading(false);
-      });
+      ])
+        .then(([{ matches, canEdit }, { selections }]) => {
+          setMatches(matches);
+          setCanEdit(canEdit);
+          setSelections(new Set(selections));
+          setLoading(false);
+        })
+        .catch(() => {
+          console.error('Failed to fetch best-thirds');
+          setLoading(false);
+        });
     }
   }, [selectedUserId]);
 
