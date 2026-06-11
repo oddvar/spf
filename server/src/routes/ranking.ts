@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { pool } from '../db.js';
+import { pool, MATCH_COUNT } from '../db.js';
 import { requireAuth, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
@@ -23,8 +23,9 @@ interface UserRanking {
 router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     // Get all active users except oddvar@geheb.com
+    const predCols = Array.from({ length: MATCH_COUNT }, (_, i) => `match${i + 1}`).join(', ');
     const [userRows] = await pool.execute(
-      `SELECT id, first_name, last_name, email FROM users WHERE email != ? AND active = 1 ORDER BY first_name, last_name`,
+      `SELECT id, first_name, last_name, email, ${predCols} FROM users WHERE email != ? AND active = 1 ORDER BY first_name, last_name`,
       ['oddvar@geheb.com'],
     );
 
@@ -51,10 +52,8 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
     let maxWinnerScore = 0;
 
     // Count group stage predictions that have been set in oddvar's data
-    const groupMatchesSet = [];
     for (let i = 1; i <= 72; i++) {
       if (oddvarData[`match${i}`]) {
-        groupMatchesSet.push(i);
         maxGroupStageScore += 1;
       }
     }
@@ -118,7 +117,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       let winnerScore = 0;
 
       // Group stage: 1 point per correct prediction (only matches oddvar has set)
-      for (const i of groupMatchesSet) {
+      for (let i = 1; i <= 72; i++) {
         const userPred = user[`match${i}`];
         const correctPred = oddvarData[`match${i}`];
         if (userPred && correctPred && userPred === correctPred) {
