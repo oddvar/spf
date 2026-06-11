@@ -50,9 +50,11 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
     let maxThirdPlaceScore = 0;
     let maxWinnerScore = 0;
 
-    // Count group stage predictions
+    // Count group stage predictions that have been set in oddvar's data
+    const groupMatchesSet = [];
     for (let i = 1; i <= 72; i++) {
       if (oddvarData[`match${i}`]) {
+        groupMatchesSet.push(i);
         maxGroupStageScore += 1;
       }
     }
@@ -115,8 +117,8 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       let thirdPlaceScore = 0;
       let winnerScore = 0;
 
-      // Group stage: 1 point per correct prediction (72 matches)
-      for (let i = 1; i <= 72; i++) {
+      // Group stage: 1 point per correct prediction (only matches oddvar has set)
+      for (const i of groupMatchesSet) {
         const userPred = user[`match${i}`];
         const correctPred = oddvarData[`match${i}`];
         if (userPred && correctPred && userPred === correctPred) {

@@ -125,8 +125,9 @@ router.get('/today', requireAuth, async (req: AuthRequest, res: Response) => {
         const [predRows] = await pool.execute(
           `SELECT id, first_name, last_name, ${colName} as prediction
            FROM users
-           WHERE ${colName} IS NOT NULL AND active = 1
+           WHERE ${colName} IS NOT NULL AND active = 1 AND email != ?
            ORDER BY first_name, last_name`,
+          ['oddvar@geheb.com'],
         );
 
         for (const row of predRows as any[]) {
@@ -143,8 +144,9 @@ router.get('/today', requireAuth, async (req: AuthRequest, res: Response) => {
         const [predRows] = await pool.execute(
           `SELECT id, first_name, last_name, ${colName} as prediction
            FROM users
-           WHERE ${colName} IS NOT NULL AND active = 1
+           WHERE ${colName} IS NOT NULL AND active = 1 AND email != ?
            ORDER BY first_name, last_name`,
+          ['oddvar@geheb.com'],
         );
 
         for (const row of predRows as any[]) {
@@ -187,8 +189,9 @@ router.get('/today', requireAuth, async (req: AuthRequest, res: Response) => {
               const [nextPredRows] = await pool.execute(
                 `SELECT id, first_name, last_name, ${nextColName} as prediction
                  FROM users
-                 WHERE ${nextColName} IS NOT NULL AND active = 1
+                 WHERE ${nextColName} IS NOT NULL AND active = 1 AND email != ?
                  ORDER BY first_name, last_name`,
+                ['oddvar@geheb.com'],
               );
 
               // Get the next match details to know which team is home/away in each prediction

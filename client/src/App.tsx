@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
 import PredictionsPage from './pages/PredictionsPage';
@@ -51,15 +51,19 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function Nav({ showShouts }: { showShouts: boolean }) {
+  const location = useLocation();
+
+  const isActive = (path: string) => location.pathname === path;
+
   return (
     <nav className="main-nav">
       <span className="nav-brand">SPF 2026</span>
       <div className="nav-center">
-        <Link to="/predictions">Predictions</Link>
-        {showShouts && <Link to="/today">Next</Link>}
-        {showShouts && <Link to="/ranking">Ranking</Link>}
-        {showShouts && <Link to="/shouts">Shouts</Link>}
-        <Link to="/help">Help</Link>
+        <Link to="/predictions" style={{ fontWeight: isActive('/predictions') ? 'bold' : 'normal' }}>Predictions</Link>
+        {showShouts && <Link to="/today" style={{ fontWeight: isActive('/today') ? 'bold' : 'normal' }}>Next</Link>}
+        {showShouts && <Link to="/ranking" style={{ fontWeight: isActive('/ranking') ? 'bold' : 'normal' }}>Ranking</Link>}
+        {showShouts && <Link to="/shouts" style={{ fontWeight: isActive('/shouts') ? 'bold' : 'normal' }}>Shouts</Link>}
+        <Link to="/help" style={{ fontWeight: isActive('/help') ? 'bold' : 'normal' }}>Help</Link>
       </div>
       <div className="nav-right">
         <Link to="/settings" className="nav-avatar">
