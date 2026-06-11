@@ -41,7 +41,7 @@ export default function TodayPage() {
       for (let i = 0; i < 30; i++) {
         const checkDate = new Date(today);
         checkDate.setDate(checkDate.getDate() + i);
-        const dateStr = checkDate.toISOString().split('T')[0];
+        const dateStr = checkDate.toLocaleDateString('en-CA');
         try {
           const matchesForDate = await get<Match[]>(`/today?date=${dateStr}`);
           if (matchesForDate.length > 0) {
