@@ -93,10 +93,15 @@ function AppRoutes() {
         });
         if (res.ok) {
           const data = await res.json() as { can_view_others?: boolean };
-          setShowShouts(!!data.can_view_others);
+          console.log('Settings response:', data);
+          const canViewOthers = !!data.can_view_others;
+          console.log('Setting showShouts to:', canViewOthers);
+          setShowShouts(canViewOthers);
+        } else {
+          console.error('Settings endpoint returned:', res.status);
         }
-      } catch {
-        // Silently fail, default to not showing features
+      } catch (err) {
+        console.error('Settings fetch failed:', err);
       }
     };
 
