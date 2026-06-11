@@ -16,8 +16,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const data = await res.json();
 
   if (res.status === 401) {
-    localStorage.removeItem('token');
-    window.location.href = '/spf/login';
+    // Don't redirect if already on login page
+    if (!window.location.pathname.includes('/login')) {
+      localStorage.removeItem('token');
+      window.location.href = '/spf/login';
+    }
     throw new ApiError(401, (data as { error?: string }).error ?? 'Unauthorised');
   }
 

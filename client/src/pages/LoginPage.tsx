@@ -1,4 +1,4 @@
-import { useState, useActionState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { post, ApiError } from '../api/client';
 import spfLogo from '../assets/spf.png';
@@ -34,31 +34,39 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isPending, setIsPending] = useState(false);
 
-  const [formError, submitAction, isPending] = useActionState(
-    async (_prev: string | null, _formData: FormData) => {
-      const errors = validate(email, password);
-      if (Object.keys(errors).length > 0) {
-        setFieldErrors(errors);
-        return null;
-      }
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
 
-      try {
-        const data = await post<LoginResponse>('/auth/login', { email: email.trim(), password });
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('userId', data.user.id);
-        localStorage.setItem('firstName', data.user.firstName);
-        localStorage.setItem('lastName', data.user.lastName);
-        localStorage.setItem('canEdit', String(data.user.canEdit));
-        navigate('/predictions');
-        return null;
-      } catch (err) {
-        if (err instanceof ApiError) return err.message;
-        return 'Something went wrong. Please try again.';
+    const errors = validate(email, password);
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setIsPending(true);
+    setFormError(null);
+
+    try {
+      const data = await post<LoginResponse>('/auth/login', { email: email.trim(), password });
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userId', data.user.id);
+      localStorage.setItem('firstName', data.user.firstName);
+      localStorage.setItem('lastName', data.user.lastName);
+      localStorage.setItem('canEdit', String(data.user.canEdit));
+      navigate('/predictions');
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setFormError(err.message);
+      } else {
+        setFormError('Something went wrong. Please try again.');
       }
-    },
-    null,
-  );
+    } finally {
+      setIsPending(false);
+    }
+  };
 
   return (
     <div className="auth-container">
@@ -70,11 +78,12 @@ export default function LoginPage() {
         <p className="form-success">Account created! Sign in to continue.</p>
       )}
 
-      <form action={submitAction} noValidate>
+      <form onSubmit={handleSubmit}>
         <div className={`field${fieldErrors.email ? ' field--error' : ''}`}>
           <label htmlFor="email">Email</label>
           <input
             id="email"
+            name="email"
             type="email"
             value={email}
             autoComplete="email"
@@ -96,6 +105,7 @@ export default function LoginPage() {
           <label htmlFor="password">Password</label>
           <input
             id="password"
+            name="password"
             type="password"
             value={password}
             autoComplete="current-password"
