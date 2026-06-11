@@ -22,9 +22,9 @@ interface UserRanking {
 
 router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
-    // Get all users except oddvar@geheb.com
+    // Get all active users except oddvar@geheb.com
     const [userRows] = await pool.execute(
-      `SELECT id, first_name, last_name, email FROM users WHERE email != ? ORDER BY first_name, last_name`,
+      `SELECT id, first_name, last_name, email FROM users WHERE email != ? AND active = 1 ORDER BY first_name, last_name`,
       ['oddvar@geheb.com'],
     );
 

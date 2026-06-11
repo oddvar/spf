@@ -9,7 +9,7 @@ const PRED_COLS = Array.from({ length: MATCH_COUNT }, (_, i) => `match${i + 1}`)
 router.get('/users/list', requireAuth, async (_req: AuthRequest, res: Response) => {
   try {
     const [users] = await pool.execute(
-      'SELECT id, first_name, last_name FROM users WHERE email != ? ORDER BY first_name, last_name',
+      'SELECT id, first_name, last_name FROM users WHERE email != ? AND active = 1 ORDER BY first_name, last_name',
       ['oddvar@geheb.com'],
     );
     res.json(users);
