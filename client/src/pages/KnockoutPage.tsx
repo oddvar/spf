@@ -98,7 +98,10 @@ export default function KnockoutPage() {
   }, []);
 
   useEffect(() => {
-    if (!canViewOthers) return;
+    if (!canViewOthers) {
+      setSelectedUserId('');
+      return;
+    }
 
     get<User[]>('/users/list')
       .then(setUsers)
