@@ -90,6 +90,7 @@ router.post('/login', async (req: Request, res: Response) => {
       payment_status: PaymentStatus;
       can_edit: number;
       can_view_others: number;
+      active: number;
     }>;
 
     if (users.length === 0) {
@@ -98,6 +99,12 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 
     const user = users[0];
+
+    if (!user.active) {
+      res.status(403).json({ error: 'Your account has been deactivated' });
+      return;
+    }
+
     const passwordMatch = await bcrypt.compare(password, user.password_hash);
     if (!passwordMatch) {
       res.status(401).json({ error: 'Invalid email or password' });
