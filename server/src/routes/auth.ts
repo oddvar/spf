@@ -14,57 +14,7 @@ function isValidEmail(email: string): boolean {
 }
 
 router.post('/register', async (req: Request, res: Response) => {
-  const { firstName, lastName, email, password, paymentStatus } = req.body as Record<string, string>;
-
-  const requiredFields: [string, string][] = [
-    ['firstName', firstName],
-    ['lastName', lastName],
-    ['email', email],
-    ['password', password],
-    ['paymentStatus', paymentStatus],
-  ];
-
-  for (const [field, value] of requiredFields) {
-    if (!value || value.trim() === '') {
-      res.status(400).json({ error: `${field} is required` });
-      return;
-    }
-  }
-
-  if (!isValidEmail(email)) {
-    res.status(400).json({ error: 'Invalid email address' });
-    return;
-  }
-
-  if (password.length < 8) {
-    res.status(400).json({ error: 'Password must be at least 8 characters' });
-    return;
-  }
-
-  if (!PAYMENT_STATUSES.includes(paymentStatus as PaymentStatus)) {
-    res.status(400).json({ error: 'paymentStatus must be NO, WANTS_TO_PAY, or HAS_PAID' });
-    return;
-  }
-
-  const id = uuidv4();
-  const passwordHash = await bcrypt.hash(password, 10);
-
-  try {
-    await pool.execute(
-      `INSERT INTO users (id, first_name, last_name, email, password_hash, payment_status)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [id, firstName.trim(), lastName.trim(), email.trim(), passwordHash, paymentStatus],
-    );
-    res.status(201).json({ id, email: email.trim() });
-  } catch (err: unknown) {
-    const mysqlErr = err as { code?: string; message?: string };
-    if (mysqlErr.code === 'ER_DUP_ENTRY') {
-      res.status(409).json({ error: 'An account with this email already exists' });
-      return;
-    }
-    console.error('Register error:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+  res.status(403).json({ error: 'The competition has now started and new users are no longer accepted' });
 });
 
 router.post('/login', async (req: Request, res: Response) => {
