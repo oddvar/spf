@@ -55,11 +55,15 @@ function Nav({ showShouts }: { showShouts: boolean }) {
 
   const isActive = (path: string) => location.pathname === path;
 
+  const handlePredictionsClick = () => {
+    localStorage.removeItem('selectedUserId');
+  };
+
   return (
     <nav className="main-nav">
       <span className="nav-brand">SPF 2026</span>
       <div className="nav-center">
-        <Link to="/predictions" style={{ fontWeight: isActive('/predictions') ? 'bold' : 'normal' }}>Predictions</Link>
+        <Link to="/predictions" onClick={handlePredictionsClick} style={{ fontWeight: isActive('/predictions') ? 'bold' : 'normal' }}>Predictions</Link>
         {showShouts && <Link to="/today" style={{ fontWeight: isActive('/today') ? 'bold' : 'normal' }}>Next</Link>}
         {showShouts && <Link to="/ranking" style={{ fontWeight: isActive('/ranking') ? 'bold' : 'normal' }}>Ranking</Link>}
         {showShouts && <Link to="/shouts" style={{ fontWeight: isActive('/shouts') ? 'bold' : 'normal' }}>Shouts</Link>}

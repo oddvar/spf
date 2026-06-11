@@ -81,12 +81,20 @@ export default function PredictionsPage() {
 
   useEffect(() => {
     if (!canViewOthers) {
-      setSelectedUserId('');
       return;
     }
 
     get<User[]>('/users/list')
-      .then(setUsers)
+      .then((usersList) => {
+        const loggedInUserId = localStorage.getItem('userId') || '';
+        const loggedInUser: User = {
+          id: '',
+          first_name: localStorage.getItem('firstName') || '',
+          last_name: localStorage.getItem('lastName') || '',
+        };
+        const otherUsers = usersList.filter((u) => u.id !== loggedInUserId);
+        setUsers([loggedInUser, ...otherUsers]);
+      })
       .catch(() => {
         console.error('Failed to fetch users');
       });

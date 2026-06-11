@@ -99,12 +99,20 @@ export default function KnockoutPage() {
 
   useEffect(() => {
     if (!canViewOthers) {
-      setSelectedUserId('');
       return;
     }
 
     get<User[]>('/users/list')
-      .then(setUsers)
+      .then((usersList) => {
+        const loggedInUserId = localStorage.getItem('userId') || '';
+        const loggedInUser: User = {
+          id: '',
+          first_name: localStorage.getItem('firstName') || '',
+          last_name: localStorage.getItem('lastName') || '',
+        };
+        const otherUsers = usersList.filter((u) => u.id !== loggedInUserId);
+        setUsers([loggedInUser, ...otherUsers]);
+      })
       .catch(() => {
         console.error('Failed to fetch users');
       });
@@ -117,6 +125,11 @@ export default function KnockoutPage() {
         try {
           const ko = await get<any>(`/users/${selectedUserId}/knockout`);
           setKoMatches(ko.r32Predictions);
+          setR16Preds(ko.r16Predictions);
+          setQfPreds(ko.qfPredictions);
+          setSfPreds(ko.sfPredictions);
+          setFPred(ko.fPredictions[0] ?? null);
+          setThirdPred(ko.thirdPrediction);
           setCanEdit(false);
           // Re-fetch group matches and best-thirds for context
           const [group, thirds] = await Promise.all([

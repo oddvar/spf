@@ -6,11 +6,11 @@ const router = Router();
 
 const PRED_COLS = Array.from({ length: MATCH_COUNT }, (_, i) => `match${i + 1}`).join(', ');
 
-router.get('/users/list', requireAuth, async (_req: AuthRequest, res: Response) => {
+router.get('/users/list', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const [users] = await pool.execute(
-      'SELECT id, first_name, last_name FROM users WHERE email != ? AND active = 1 ORDER BY first_name, last_name',
-      ['oddvar@geheb.com'],
+      'SELECT id, first_name, last_name FROM users WHERE id != ? AND email != ? AND active = 1 ORDER BY first_name, last_name',
+      [req.userId, 'oddvar@geheb.com'],
     );
     res.json(users);
   } catch (err) {
@@ -128,6 +128,12 @@ router.get('/users/:userId/knockout', requireAuth, async (req: AuthRequest, res:
         ...normalise(m),
         prediction: userData[`ko${m.ko_number}`] ?? null,
       })),
+      r16Predictions: Array.from({ length: 8 }, (_, i) => userData[`ko${17 + i}`] ?? null),
+      qfPredictions: Array.from({ length: 4 }, (_, i) => userData[`ko${25 + i}`] ?? null),
+      sfPredictions: Array.from({ length: 2 }, (_, i) => userData[`ko${29 + i}`] ?? null),
+      fPredictions: [userData.ko31 ?? null],
+      thirdPrediction: userData.ko32 ?? null,
+      canEdit: false,
     });
   } catch (err) {
     console.error('Error fetching user knockout predictions:', err);

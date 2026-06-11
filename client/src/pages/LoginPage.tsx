@@ -46,6 +46,7 @@ export default function LoginPage() {
       try {
         const data = await post<LoginResponse>('/auth/login', { email: email.trim(), password });
         localStorage.setItem('token', data.token);
+        localStorage.setItem('userId', data.user.id);
         localStorage.setItem('firstName', data.user.firstName);
         localStorage.setItem('lastName', data.user.lastName);
         localStorage.setItem('canEdit', String(data.user.canEdit));
