@@ -131,7 +131,9 @@ export default function TodayPage() {
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                     {(['H', 'D', 'A'] as const).map((predType) => {
-                      const predictions = match.predictions.filter((p) => p.prediction === predType);
+                      const predictions = match.predictions
+                        .filter((p) => p.prediction === predType)
+                        .sort((a, b) => a.last_name.localeCompare(b.last_name));
                       return (
                         <div key={predType}>
                           <div
@@ -147,7 +149,7 @@ export default function TodayPage() {
                           >
                             {predType === 'H' ? 'Home' : predType === 'D' ? 'Draw' : 'Away'} ({predictions.length})
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
                             {predictions.length === 0 ? (
                               <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>—</span>
                             ) : (
@@ -155,11 +157,7 @@ export default function TodayPage() {
                                 <div
                                   key={pred.user_id}
                                   style={{
-                                    padding: '0.5rem',
-                                    backgroundColor: 'var(--bg)',
-                                    borderRadius: '4px',
-                                    border: '1px solid var(--border)',
-                                    fontSize: '0.875rem',
+                                    fontSize: '0.75rem',
                                   }}
                                 >
                                   {pred.first_name} {pred.last_name}
@@ -199,7 +197,9 @@ export default function TodayPage() {
                         ) : match.nextStageInfo.nextStagePredictions.home.length === 0 ? (
                           <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>—</span>
                         ) : (
-                          match.nextStageInfo.nextStagePredictions.home.map((pred) => (
+                          [...match.nextStageInfo.nextStagePredictions.home]
+                            .sort((a, b) => a.last_name.localeCompare(b.last_name))
+                            .map((pred) => (
                             <div
                               key={pred.user_id}
                               style={{
@@ -236,7 +236,9 @@ export default function TodayPage() {
                         ) : match.nextStageInfo.nextStagePredictions.away.length === 0 ? (
                           <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>—</span>
                         ) : (
-                          match.nextStageInfo.nextStagePredictions.away.map((pred) => (
+                          [...match.nextStageInfo.nextStagePredictions.away]
+                            .sort((a, b) => a.last_name.localeCompare(b.last_name))
+                            .map((pred) => (
                             <div
                               key={pred.user_id}
                               style={{
@@ -266,7 +268,9 @@ export default function TodayPage() {
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     {(['H', 'A'] as const).map((predType) => {
-                      const predictions = match.predictions.filter((p) => p.prediction === predType);
+                      const predictions = match.predictions
+                        .filter((p) => p.prediction === predType)
+                        .sort((a, b) => a.last_name.localeCompare(b.last_name));
                       return (
                         <div key={predType}>
                           <div
@@ -282,7 +286,7 @@ export default function TodayPage() {
                           >
                             {predType === 'H' ? 'Home' : 'Away'} ({predictions.length})
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
                             {predictions.length === 0 ? (
                               <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>—</span>
                             ) : (
@@ -290,11 +294,7 @@ export default function TodayPage() {
                                 <div
                                   key={pred.user_id}
                                   style={{
-                                    padding: '0.5rem',
-                                    backgroundColor: 'var(--bg)',
-                                    borderRadius: '4px',
-                                    border: '1px solid var(--border)',
-                                    fontSize: '0.875rem',
+                                    fontSize: '0.75rem',
                                   }}
                                 >
                                   {pred.first_name} {pred.last_name}
