@@ -153,16 +153,21 @@ export default function TodayPage() {
                             {predictions.length === 0 ? (
                               <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>—</span>
                             ) : (
-                              predictions.map((pred) => (
-                                <div
-                                  key={pred.user_id}
-                                  style={{
-                                    fontSize: '0.75rem',
-                                  }}
-                                >
-                                  {pred.first_name} {pred.last_name}
-                                </div>
-                              ))
+                              predictions.map((pred) => {
+                                const isLoggedInUser = pred.first_name === localStorage.getItem('firstName') &&
+                                                       pred.last_name === localStorage.getItem('lastName');
+                                return (
+                                  <div
+                                    key={pred.user_id}
+                                    style={{
+                                      fontSize: '0.75rem',
+                                      fontWeight: isLoggedInUser ? 'bold' : 'normal',
+                                    }}
+                                  >
+                                    {pred.first_name} {pred.last_name}
+                                  </div>
+                                );
+                              })
                             )}
                           </div>
                         </div>
@@ -199,20 +204,25 @@ export default function TodayPage() {
                         ) : (
                           [...match.nextStageInfo.nextStagePredictions.home]
                             .sort((a, b) => a.last_name.localeCompare(b.last_name))
-                            .map((pred) => (
-                            <div
-                              key={pred.user_id}
-                              style={{
-                                padding: '0.5rem',
-                                backgroundColor: 'var(--bg)',
-                                borderRadius: '4px',
-                                border: '1px solid var(--border)',
-                                fontSize: '0.875rem',
-                              }}
-                            >
-                              {pred.first_name} {pred.last_name}
-                            </div>
-                          ))
+                            .map((pred) => {
+                              const isLoggedInUser = pred.first_name === localStorage.getItem('firstName') &&
+                                                     pred.last_name === localStorage.getItem('lastName');
+                              return (
+                                <div
+                                  key={pred.user_id}
+                                  style={{
+                                    padding: '0.5rem',
+                                    backgroundColor: 'var(--bg)',
+                                    borderRadius: '4px',
+                                    border: '1px solid var(--border)',
+                                    fontSize: '0.875rem',
+                                    fontWeight: isLoggedInUser ? 'bold' : 'normal',
+                                  }}
+                                >
+                                  {pred.first_name} {pred.last_name}
+                                </div>
+                              );
+                            })
                         )}
                       </div>
                     </div>
@@ -290,16 +300,21 @@ export default function TodayPage() {
                             {predictions.length === 0 ? (
                               <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>—</span>
                             ) : (
-                              predictions.map((pred) => (
-                                <div
-                                  key={pred.user_id}
-                                  style={{
-                                    fontSize: '0.75rem',
-                                  }}
-                                >
-                                  {pred.first_name} {pred.last_name}
-                                </div>
-                              ))
+                              predictions.map((pred) => {
+                                const isLoggedInUser = pred.first_name === localStorage.getItem('firstName') &&
+                                                       pred.last_name === localStorage.getItem('lastName');
+                                return (
+                                  <div
+                                    key={pred.user_id}
+                                    style={{
+                                      fontSize: '0.75rem',
+                                      fontWeight: isLoggedInUser ? 'bold' : 'normal',
+                                    }}
+                                  >
+                                    {pred.first_name} {pred.last_name}
+                                  </div>
+                                );
+                              })
                             )}
                           </div>
                         </div>

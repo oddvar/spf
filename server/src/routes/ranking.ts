@@ -194,8 +194,13 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Sort by total score descending
-    rankings.sort((a, b) => b.totalScore - a.totalScore);
+    // Sort by total score descending, then by last name ascending
+    rankings.sort((a, b) => {
+      if (b.totalScore !== a.totalScore) {
+        return b.totalScore - a.totalScore;
+      }
+      return a.last_name.localeCompare(b.last_name);
+    });
 
     res.json(rankings);
   } catch (err) {
