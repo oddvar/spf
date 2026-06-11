@@ -55,17 +55,33 @@ export default function PredictionsPage() {
   const [savingId, setSavingId] = useState<number | null>(null);
 
   useEffect(() => {
-    get<{ matches: Match[]; canEdit: boolean }>('/matches')
-      .then(({ matches, canEdit }) => {
-        setMatches(matches);
-        setCanEdit(canEdit);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError('Failed to load matches');
-        setLoading(false);
-      });
-  }, []);
+    setLoading(true);
+    setError('');
+
+    if (selectedUserId) {
+      get<{ matches: Match[]; canEdit: boolean }>(`/users/${selectedUserId}/predictions`)
+        .then(({ matches, canEdit }) => {
+          setMatches(matches);
+          setCanEdit(canEdit);
+          setLoading(false);
+        })
+        .catch(() => {
+          setError('Failed to load user predictions');
+          setLoading(false);
+        });
+    } else {
+      get<{ matches: Match[]; canEdit: boolean }>('/matches')
+        .then(({ matches, canEdit }) => {
+          setMatches(matches);
+          setCanEdit(canEdit);
+          setLoading(false);
+        })
+        .catch(() => {
+          setError('Failed to load matches');
+          setLoading(false);
+        });
+    }
+  }, [selectedUserId]);
 
   useEffect(() => {
     get<{ theme: 'light' | 'dark'; can_view_others?: boolean }>('/settings')
@@ -99,23 +115,6 @@ export default function PredictionsPage() {
         console.error('Failed to fetch users');
       });
   }, [canViewOthers]);
-
-  useEffect(() => {
-    if (!selectedUserId) return;
-
-    setLoading(true);
-    setError('');
-    get<{ matches: Match[]; canEdit: boolean }>(`/users/${selectedUserId}/predictions`)
-      .then(({ matches, canEdit }) => {
-        setMatches(matches);
-        setCanEdit(canEdit);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError('Failed to load user predictions');
-        setLoading(false);
-      });
-  }, [selectedUserId]);
 
   function predict(matchId: number, prediction: Prediction) {
     setMatches((prev) => prev.map((m) => (m.id === matchId ? { ...m, prediction } : m)));
