@@ -218,7 +218,12 @@ export default function PredictionsPage() {
 
       {sections.map(({ key, heading, items }) => (
         <section key={key} className="group-section">
-          <h2 className="group-heading">{heading}</h2>
+          <div className="group-header-row">
+            <h2 className="group-heading">{heading}</h2>
+            <div className="group-header-spacer"></div>
+            <div className="column-header">Prediction</div>
+            <div className="column-header">Result</div>
+          </div>
           <div className="match-list">
             {items.map((match) => (
               <div key={match.id} className="match-row">
@@ -234,9 +239,6 @@ export default function PredictionsPage() {
                   <span className="team home">{match.home_team}</span>
                   <span className="vs">vs</span>
                   <span className="team away">{match.away_team}</span>
-                  {match.result && (
-                    <span className="match-result" title={LABELS[match.result]}>{match.result}</span>
-                  )}
                   {match.location && (
                     VENUE_LINKS[match.location]
                       ? <a className="match-location" href={VENUE_LINKS[match.location]} target="_blank" rel="noopener noreferrer">{match.location}</a>
@@ -266,6 +268,11 @@ export default function PredictionsPage() {
                       ) : null}
                     </>
                   )}
+                </div>
+                <div className="result-column">
+                  <span className={`match-result${!match.result ? ' match-result--placeholder' : ''}`}>
+                    {match.result || '?'}
+                  </span>
                 </div>
               </div>
             ))}
