@@ -5,6 +5,7 @@ interface UserRanking {
   user_id: string;
   first_name: string;
   last_name: string;
+  paymentStatus: 'NO' | 'WANTS_TO_PAY' | 'HAS_PAID';
   groupStageScore: number;
   r32Score: number;
   r16Score: number;
@@ -58,6 +59,7 @@ export default function RankingPage() {
               <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>Winner</th>
               <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', color: 'var(--accent)' }}>Total</th>
               <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Max</th>
+              <th style={{ textAlign: 'center', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>Paying</th>
             </tr>
           </thead>
           <tbody>
@@ -86,6 +88,9 @@ export default function RankingPage() {
                   </td>
                   <td style={{ padding: '0.5rem', textAlign: 'right', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                     {user.maxPossibleScore}
+                  </td>
+                  <td style={{ padding: '0.5rem', textAlign: 'center', fontSize: '0.9rem' }}>
+                    {user.paymentStatus === 'NO' ? 'No' : 'Yes'}
                   </td>
                 </tr>
               );

@@ -8,6 +8,7 @@ interface UserRanking {
   user_id: string;
   first_name: string;
   last_name: string;
+  paymentStatus: 'NO' | 'WANTS_TO_PAY' | 'HAS_PAID';
   groupStageScore: number;
   r32Score: number;
   r16Score: number;
@@ -25,7 +26,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
     // Get all active users except oddvar@geheb.com
     const predCols = Array.from({ length: MATCH_COUNT }, (_, i) => `match${i + 1}`).join(', ');
     const [userRows] = await pool.execute(
-      `SELECT id, first_name, last_name, email, ${predCols} FROM users WHERE email != ? AND active = 1 ORDER BY first_name, last_name`,
+      `SELECT id, first_name, last_name, payment_status, email, ${predCols} FROM users WHERE email != ? AND active = 1 ORDER BY first_name, last_name`,
       ['oddvar@geheb.com'],
     );
 
@@ -182,6 +183,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
         user_id: user.id,
         first_name: user.first_name,
         last_name: user.last_name,
+        paymentStatus: user.payment_status,
         groupStageScore,
         r32Score,
         r16Score,
