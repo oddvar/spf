@@ -19,6 +19,7 @@ interface UserRanking {
   winnerScore: number;
   totalScore: number;
   maxPossibleScore: number;
+  koWinner: string | null;
 }
 
 router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
@@ -26,7 +27,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
     // Get all active users except oddvar@geheb.com
     const predCols = Array.from({ length: MATCH_COUNT }, (_, i) => `match${i + 1}`).join(', ');
     const [userRows] = await pool.execute(
-      `SELECT id, first_name, last_name, payment_status, email, ${predCols} FROM users WHERE email != ? AND active = 1 ORDER BY first_name, last_name`,
+      `SELECT id, first_name, last_name, payment_status, email, ko_winner, ${predCols} FROM users WHERE email != ? AND active = 1 ORDER BY first_name, last_name`,
       ['oddvar@geheb.com'],
     );
 
@@ -194,6 +195,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
         winnerScore,
         totalScore,
         maxPossibleScore: totalMaxPossibleScore,
+        koWinner: user.ko_winner || null,
       });
     }
 

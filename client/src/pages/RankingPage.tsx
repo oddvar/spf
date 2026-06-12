@@ -16,6 +16,7 @@ interface UserRanking {
   winnerScore: number;
   totalScore: number;
   maxPossibleScore: number;
+  koWinner: string | null;
 }
 
 export default function RankingPage() {
@@ -60,6 +61,7 @@ export default function RankingPage() {
               <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', color: 'var(--accent)' }}>Total</th>
               <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Max</th>
               <th style={{ textAlign: 'center', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>Paying</th>
+              <th style={{ textAlign: 'left', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>Winner</th>
             </tr>
           </thead>
           <tbody>
@@ -91,6 +93,9 @@ export default function RankingPage() {
                   </td>
                   <td style={{ padding: '0.5rem', textAlign: 'center', fontSize: '0.9rem' }}>
                     {user.paymentStatus === 'NO' ? 'No' : 'Yes'}
+                  </td>
+                  <td style={{ padding: '0.5rem', textAlign: 'left', fontSize: '0.9rem' }}>
+                    {user.koWinner || '—'}
                   </td>
                 </tr>
               );
