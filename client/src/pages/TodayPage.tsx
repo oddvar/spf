@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { get } from '../api/client';
+import { VENUE_LINKS } from '../utils/venues';
 
 interface UserPrediction {
   user_id: string;
@@ -115,7 +116,18 @@ export default function TodayPage() {
               <div style={{ marginBottom: '1rem' }}>
                 <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
                   {match.stage === 'r32' ? 'Round of 32' : match.stage === 'r16' ? 'Round of 16' : match.stage === 'qf' ? 'Quarter-final' : match.stage === 'sf' ? 'Semi-final' : match.stage === 'f' ? 'Final' : match.stage === 'tp' ? 'Third place playoff' : 'Group Stage'} • {matchTime(match.match_datetime)}
-                  {match.location && ` • ${match.location}`}
+                  {match.location && (
+                    <>
+                      {' • '}
+                      {VENUE_LINKS[match.location] ? (
+                        <a href={VENUE_LINKS[match.location]} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none' }}>
+                          {match.location}
+                        </a>
+                      ) : (
+                        match.location
+                      )}
+                    </>
+                  )}
                 </div>
                 <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>
                   {match.resolvedHomeTeam ? match.resolvedHomeTeam : match.home_team} <span style={{ color: 'var(--text-secondary)' }}>vs</span> {match.resolvedAwayTeam ? match.resolvedAwayTeam : match.away_team}
