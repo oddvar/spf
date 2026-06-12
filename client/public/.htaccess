@@ -1,0 +1,11 @@
+# Hashed assets (JS, CSS, images) — safe to cache long-term because Vite fingerprints filenames
+<Directory "assets">
+    <FilesMatch "\.">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</Directory>
+
+# index.html and SVGs — must revalidate on every request
+<FilesMatch "\.(html|svg)$">
+    Header set Cache-Control "no-cache"
+</FilesMatch>
