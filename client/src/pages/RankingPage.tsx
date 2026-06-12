@@ -66,10 +66,11 @@ export default function RankingPage() {
               const rank = 1 + rankings.filter((u) => u.totalScore > user.totalScore).length;
               const isLoggedInUser = user.first_name === localStorage.getItem('firstName') &&
                                      user.last_name === localStorage.getItem('lastName');
+              const isGoldUser = user.first_name === 'Martin' && user.last_name === 'Gjerstad';
               return (
                 <tr key={user.user_id} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '0.5rem', textAlign: 'left' }}>{rank}</td>
-                  <td style={{ padding: '0.5rem', textAlign: 'left', fontWeight: isLoggedInUser ? 'bold' : 'normal' }}>
+                  <td className={isGoldUser ? 'user-gold' : ''} style={{ padding: '0.5rem', textAlign: 'left', fontWeight: isLoggedInUser ? 'bold' : 'normal' }}>
                     {user.first_name} {user.last_name}
                   </td>
                   <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.groupStageScore}</td>

@@ -162,9 +162,11 @@ export default function TodayPage() {
                               predictions.map((pred) => {
                                 const isLoggedInUser = pred.first_name === localStorage.getItem('firstName') &&
                                                        pred.last_name === localStorage.getItem('lastName');
+                                const isGoldUser = pred.first_name === 'Martin' && pred.last_name === 'Gjerstad';
                                 return (
                                   <div
                                     key={pred.user_id}
+                                    className={isGoldUser ? 'user-gold' : ''}
                                     style={{
                                       fontSize: '0.75rem',
                                       fontWeight: isLoggedInUser ? 'bold' : 'normal',
@@ -309,9 +311,11 @@ export default function TodayPage() {
                               predictions.map((pred) => {
                                 const isLoggedInUser = pred.first_name === localStorage.getItem('firstName') &&
                                                        pred.last_name === localStorage.getItem('lastName');
+                                const isGoldUser = pred.first_name === 'Martin' && pred.last_name === 'Gjerstad';
                                 return (
                                   <div
                                     key={pred.user_id}
+                                    className={isGoldUser ? 'user-gold' : ''}
                                     style={{
                                       fontSize: '0.75rem',
                                       fontWeight: isLoggedInUser ? 'bold' : 'normal',

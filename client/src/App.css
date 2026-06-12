@@ -854,3 +854,9 @@ form {
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* Special user highlight */
+.user-gold {
+  color: #d4a574;
+  font-weight: 600;
+}
