@@ -506,30 +506,30 @@ export default function KnockoutPage() {
 
       {saveError && <p className="form-error" style={{ marginBottom: '12px' }}>{saveError}</p>}
 
-      {/* Round labels row */}
-      <div style={{ position: 'relative', height: 24, marginBottom: 6, width: TOTAL_W }}>
-        {ROUND_LABELS.map((lbl, r) => (
-          <span
-            key={r}
-            style={{
-              position: 'absolute',
-              left: boxLeft(r),
-              width: BOX_W,
-              textAlign: 'center',
-              fontSize: 11,
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              color: 'var(--text)',
-            }}
-          >
-            {lbl}
-          </span>
-        ))}
-      </div>
-
       {/* Bracket */}
       <div style={{ overflowX: 'auto', paddingBottom: 16 }}>
+        {/* Round labels row */}
+        <div style={{ position: 'relative', height: 24, marginBottom: 6, width: TOTAL_W }}>
+          {ROUND_LABELS.map((lbl, r) => (
+            <span
+              key={r}
+              style={{
+                position: 'absolute',
+                left: boxLeft(r),
+                width: BOX_W,
+                textAlign: 'center',
+                fontSize: 11,
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                color: 'var(--text)',
+              }}
+            >
+              {lbl}
+            </span>
+          ))}
+        </div>
+
         <div style={{ position: 'relative', width: TOTAL_W, height: TOTAL_H }}>
 
           {/* Connector SVG */}
