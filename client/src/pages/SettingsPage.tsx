@@ -164,33 +164,48 @@ export default function SettingsPage() {
 
         <div className="field">
           <label>Payment Status</label>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: isPending || (!canEdit && settings.paymentStatus !== 'HAS_PAID') ? 'not-allowed' : 'pointer', opacity: isPending || (!canEdit && settings.paymentStatus !== 'HAS_PAID') ? 0.5 : 1 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px', opacity: settings.paymentStatus === 'HAS_PAID' ? 0.5 : 1 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: isPending || settings.paymentStatus === 'HAS_PAID' || (!canEdit && settings.paymentStatus as any !== 'HAS_PAID') ? 'not-allowed' : 'pointer' }}>
               <input
                 type="radio"
                 name="paymentStatus"
                 value="NO"
                 checked={settings.paymentStatus === 'NO'}
-                onChange={(e) => setSettings({ ...settings, paymentStatus: e.target.value as 'NO' | 'WANTS_TO_PAY' })}
-                disabled={isPending || (!canEdit && settings.paymentStatus !== 'HAS_PAID')}
+                onChange={(e) => setSettings({ ...settings, paymentStatus: e.target.value as 'NO' | 'WANTS_TO_PAY' | 'HAS_PAID' })}
+                disabled={isPending || settings.paymentStatus === 'HAS_PAID' || (!canEdit && (settings.paymentStatus as any) !== 'HAS_PAID')}
               />
               <span>I'm not entering the paid competition</span>
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: isPending || !canEdit ? 'not-allowed' : 'pointer', opacity: isPending || !canEdit ? 0.5 : 1 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: isPending || settings.paymentStatus === 'HAS_PAID' || !canEdit ? 'not-allowed' : 'pointer' }}>
               <input
                 type="radio"
                 name="paymentStatus"
                 value="WANTS_TO_PAY"
                 checked={settings.paymentStatus === 'WANTS_TO_PAY'}
-                onChange={(e) => setSettings({ ...settings, paymentStatus: e.target.value as 'NO' | 'WANTS_TO_PAY' })}
-                disabled={isPending || !canEdit}
+                onChange={(e) => setSettings({ ...settings, paymentStatus: e.target.value as 'NO' | 'WANTS_TO_PAY' | 'HAS_PAID' })}
+                disabled={isPending || settings.paymentStatus === 'HAS_PAID' || !canEdit}
               />
               <span>I want to join — I'll pay soon</span>
             </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'not-allowed' }}>
+              <input
+                type="radio"
+                name="paymentStatus"
+                value="HAS_PAID"
+                checked={settings.paymentStatus === 'HAS_PAID'}
+                disabled={true}
+              />
+              <span>Payment confirmed</span>
+            </label>
           </div>
-          {!canEdit && (
+          {!canEdit && settings.paymentStatus !== 'HAS_PAID' && (
             <p style={{ fontSize: '13px', color: 'var(--text)', marginTop: '8px', padding: '8px 0' }}>
               The competition has now started.
+            </p>
+          )}
+          {settings.paymentStatus === 'HAS_PAID' && (
+            <p style={{ fontSize: '13px', color: 'var(--accent)', marginTop: '8px', padding: '8px 0' }}>
+              Your payment has been confirmed. This field cannot be changed.
             </p>
           )}
         </div>
