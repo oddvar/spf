@@ -119,6 +119,7 @@ router.get('/today', requireAuth, async (req: AuthRequest, res: Response) => {
     for (const match of matches) {
       const predictions: MatchWithPredictions['predictions'] = [];
       let nextStageInfo: MatchWithPredictions['nextStageInfo'] | undefined;
+      let resultFromOddvar: string | null = null;
 
       if (match.match_number) {
         // Group stage match - get predictions from match{match_number} column
@@ -139,6 +140,15 @@ router.get('/today', requireAuth, async (req: AuthRequest, res: Response) => {
             prediction: row.prediction,
           });
         }
+
+        // Get result from oddvar@geheb.com's prediction
+        const [resultRows] = await pool.execute(
+          `SELECT ${colName} as result FROM users WHERE email = ?`,
+          ['oddvar@geheb.com'],
+        );
+        if ((resultRows as any[]).length > 0) {
+          resultFromOddvar = (resultRows as any[])[0].result || null;
+        }
       } else if (match.ko_number) {
         // Knockout match - get predictions from ko{ko_number} column
         const colName = `ko${match.ko_number}`;
@@ -157,6 +167,15 @@ router.get('/today', requireAuth, async (req: AuthRequest, res: Response) => {
             last_name: row.last_name,
             prediction: row.prediction,
           });
+        }
+
+        // Get result from oddvar@geheb.com's prediction
+        const [resultRows] = await pool.execute(
+          `SELECT ${colName} as result FROM users WHERE email = ?`,
+          ['oddvar@geheb.com'],
+        );
+        if ((resultRows as any[]).length > 0) {
+          resultFromOddvar = (resultRows as any[])[0].result || null;
         }
 
         // For knockout matches, get the next stage match and fetch predictions
@@ -250,7 +269,7 @@ router.get('/today', requireAuth, async (req: AuthRequest, res: Response) => {
         match_datetime: (match.match_datetime as string).replace(' ', 'T') + 'Z',
         location: match.location,
         stage: match.stage,
-        result: match.result,
+        result: resultFromOddvar as 'H' | 'D' | 'A' | null,
         predictions,
       };
 

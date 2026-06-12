@@ -15,12 +15,11 @@ type MatchRow = {
   away_team: string;
   match_datetime: string;
   location: string | null;
-  result: 'H' | 'D' | 'A' | null;
 };
 
 router.get('/matches', requireAuth, async (req: AuthRequest, res: Response) => {
   const [matches] = await pool.execute(
-    'SELECT id, match_number, group_name, home_team, away_team, match_datetime, location, result FROM matches WHERE stage IS NULL ORDER BY match_datetime',
+    'SELECT id, match_number, group_name, home_team, away_team, match_datetime, location FROM matches WHERE stage IS NULL ORDER BY match_datetime',
   );
 
   const normalise = (m: MatchRow) => ({
@@ -36,11 +35,19 @@ router.get('/matches', requireAuth, async (req: AuthRequest, res: Response) => {
   const canEdit = !!userData.can_edit;
   const preds = userData as Record<string, string | null>;
 
+  // Get oddvar@geheb.com's predictions (the results)
+  const [oddvarRows] = await pool.execute(
+    `SELECT ${PRED_COLS} FROM users WHERE email = ?`,
+    ['oddvar@geheb.com'],
+  );
+  const oddvarData = (oddvarRows as Record<string, string | null>[])[0] ?? {};
+
   res.json({
     canEdit,
     matches: (matches as MatchRow[]).map((m) => ({
       ...normalise(m),
       prediction: preds[`match${m.match_number}`] ?? null,
+      result: (oddvarData[`match${m.match_number}`] as 'H' | 'D' | 'A' | null) ?? null,
     })),
   });
 });

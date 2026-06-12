@@ -133,7 +133,7 @@ export default function TodayPage() {
                   {match.resolvedHomeTeam ? match.resolvedHomeTeam : match.home_team} <span style={{ color: 'var(--text-secondary)' }}>vs</span> {match.resolvedAwayTeam ? match.resolvedAwayTeam : match.away_team}
                   {match.result && (
                     <span style={{ marginLeft: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                      ({match.result === 'H' ? 'Home' : match.result === 'D' ? 'Draw' : 'Away'} won)
+                      ({match.result === 'H' ? 'Home win' : match.result === 'D' ? 'Draw' : 'Away win'})
                     </span>
                   )}
                 </div>
