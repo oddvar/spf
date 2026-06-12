@@ -50,59 +50,60 @@ export default function RankingPage() {
       ) : rankings.length === 0 ? (
         <p>No rankings available.</p>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem', fontSize: '0.9rem' }}>
-          <thead>
-            <tr style={{ borderBottom: '2px solid var(--border)' }}>
-              <th style={{ textAlign: 'left', padding: '0.5rem', fontWeight: 'bold' }}>Rank</th>
-              <th style={{ textAlign: 'left', padding: '0.5rem', fontWeight: 'bold' }}>Name</th>
-              <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>Group</th>
-              <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>R32</th>
-              <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>R16</th>
-              <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>QF</th>
-              <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>SF</th>
-              <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>Final</th>
-              <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>3rd</th>
-              <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>Winner</th>
-              <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', color: 'var(--accent)' }}>Total</th>
-              <th style={{ textAlign: 'center', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>Paying</th>
-              <th style={{ textAlign: 'left', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>Winner</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rankings.map((user) => {
-              // Find rank: count how many users have a higher score, then add 1
-              const rank = 1 + rankings.filter((u) => u.totalScore > user.totalScore).length;
-              const isLoggedInUser = user.first_name === localStorage.getItem('firstName') &&
-                                     user.last_name === localStorage.getItem('lastName');
-              const isGoldUser = user.first_name === 'Martin' && user.last_name === 'Gjerstad';
-              return (
-                <tr key={user.user_id} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '0.5rem', textAlign: 'left' }}>{rank}</td>
-                  <td className={isGoldUser ? 'user-gold' : ''} style={{ padding: '0.5rem', textAlign: 'left', fontWeight: isLoggedInUser ? 'bold' : 'normal' }}>
-                    {user.first_name} {user.last_name}
-                  </td>
-                  <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.groupStageScore}</td>
-                  <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.r32Score}</td>
-                  <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.r16Score}</td>
-                  <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.qfScore}</td>
-                  <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.sfScore}</td>
-                  <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.finalScore}</td>
-                  <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.thirdPlaceScore}</td>
-                  <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.winnerScore}</td>
-                  <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold', color: 'var(--accent)' }}>
-                    {user.totalScore}
-                  </td>
-                  <td style={{ padding: '0.5rem', textAlign: 'center', fontSize: '0.9rem' }}>
-                    {user.paymentStatus === 'NO' ? 'No' : 'Yes'}
-                  </td>
-                  <td style={{ padding: '0.5rem', textAlign: 'left', fontSize: '0.9rem' }}>
-                    {user.koWinner || '—'}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <>
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem', fontSize: '0.9rem' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                <th style={{ textAlign: 'left', padding: '0.5rem', fontWeight: 'bold' }}>Rank</th>
+                <th style={{ textAlign: 'left', padding: '0.5rem', fontWeight: 'bold' }}>Name</th>
+                <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>Group</th>
+                <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>R32</th>
+                <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>R16</th>
+                <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>QF</th>
+                <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>SF</th>
+                <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>Final</th>
+                <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>3rd</th>
+                <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>Winner</th>
+                <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', color: 'var(--accent)' }}>Total</th>
+                <th style={{ textAlign: 'left', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>Winner</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rankings.map((user) => {
+                // Find rank: count how many users have a higher score, then add 1
+                const rank = 1 + rankings.filter((u) => u.totalScore > user.totalScore).length;
+                const isLoggedInUser = user.first_name === localStorage.getItem('firstName') &&
+                                       user.last_name === localStorage.getItem('lastName');
+                const isGoldUser = user.first_name === 'Martin' && user.last_name === 'Gjerstad';
+                return (
+                  <tr key={user.user_id} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '0.5rem', textAlign: 'left' }}>{rank}</td>
+                    <td className={isGoldUser ? 'user-gold' : ''} style={{ padding: '0.5rem', textAlign: 'left', fontWeight: isLoggedInUser ? 'bold' : 'normal' }}>
+                      {user.first_name} {user.last_name}{user.paymentStatus === 'NO' ? '*' : ''}
+                    </td>
+                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.groupStageScore}</td>
+                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.r32Score}</td>
+                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.r16Score}</td>
+                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.qfScore}</td>
+                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.sfScore}</td>
+                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.finalScore}</td>
+                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.thirdPlaceScore}</td>
+                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.winnerScore}</td>
+                    <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold', color: 'var(--accent)' }}>
+                      {user.totalScore}
+                    </td>
+                    <td style={{ padding: '0.5rem', textAlign: 'left', fontSize: '0.9rem' }}>
+                      {user.koWinner || '—'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '1rem' }}>
+            * Not entering the paid competition
+          </p>
+        </>
       )}
     </div>
   );
