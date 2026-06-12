@@ -210,6 +210,7 @@
 
 .result-column {
   display: flex;
+  align-items: center;
   justify-content: center;
 }
 
@@ -289,7 +290,13 @@ a.match-location:hover {
 
 .prediction-btns {
   display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 4px;
+}
+
+.prediction-btns--incorrect {
+  opacity: 0.5;
 }
 
 .pred-btn {

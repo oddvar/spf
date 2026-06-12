@@ -245,7 +245,7 @@ export default function PredictionsPage() {
                       : <span className="match-location">{match.location}</span>
                   )}
                 </div>
-                <div className="prediction-btns" aria-label={`Prediction for ${match.home_team} vs ${match.away_team}`}>
+                <div className={`prediction-btns${match.result !== null && match.prediction !== null && match.prediction !== match.result ? ' prediction-btns--incorrect' : ''}`} aria-label={`Prediction for ${match.home_team} vs ${match.away_team}`}>
                   {canEdit ? (
                     (['H', 'D', 'A'] as Prediction[]).map((p) => (
                       <button
