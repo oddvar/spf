@@ -34,9 +34,14 @@ export default function RankingPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const maxPossibleScore = rankings.length > 0 ? rankings[0].maxPossibleScore : 0;
+
   return (
     <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
       <h1>Rankings</h1>
+      <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+        Current max points: {maxPossibleScore}
+      </p>
 
       {error && <div style={{ color: '#cc0000', marginBottom: '1rem' }}>{error}</div>}
 
@@ -59,7 +64,6 @@ export default function RankingPage() {
               <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>3rd</th>
               <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>Winner</th>
               <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', color: 'var(--accent)' }}>Total</th>
-              <th style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Max</th>
               <th style={{ textAlign: 'center', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>Paying</th>
               <th style={{ textAlign: 'left', padding: '0.5rem', fontWeight: 'bold', fontSize: '0.8rem' }}>Winner</th>
             </tr>
@@ -87,9 +91,6 @@ export default function RankingPage() {
                   <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.winnerScore}</td>
                   <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold', color: 'var(--accent)' }}>
                     {user.totalScore}
-                  </td>
-                  <td style={{ padding: '0.5rem', textAlign: 'right', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    {user.maxPossibleScore}
                   </td>
                   <td style={{ padding: '0.5rem', textAlign: 'center', fontSize: '0.9rem' }}>
                     {user.paymentStatus === 'NO' ? 'No' : 'Yes'}
