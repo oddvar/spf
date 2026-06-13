@@ -23,7 +23,7 @@ router.get('/users/:userId/predictions', requireAuth, async (req: AuthRequest, r
   try {
     const userId = req.params.userId;
     const [matchRows] = await pool.execute(
-      `SELECT id, match_number, group_name, home_team, away_team, match_datetime, location, result FROM matches WHERE stage IS NULL ORDER BY match_datetime`,
+      `SELECT id, match_number, group_name, home_team, away_team, match_datetime, location FROM matches WHERE stage IS NULL ORDER BY match_datetime`,
     );
 
     const [userRows] = await pool.execute(
@@ -40,6 +40,13 @@ router.get('/users/:userId/predictions', requireAuth, async (req: AuthRequest, r
     const canEdit = !!userData.can_edit;
     const preds = userData as Record<string, string | null>;
 
+    // Get oddvar@geheb.com's predictions (the results)
+    const [oddvarRows] = await pool.execute(
+      `SELECT ${PRED_COLS} FROM users WHERE email = ?`,
+      ['oddvar@geheb.com'],
+    );
+    const oddvarData = (oddvarRows as Record<string, string | null>[])[0] ?? {};
+
     const normalise = (m: any) => ({
       ...m,
       match_datetime: (m.match_datetime as string).replace(' ', 'T') + 'Z',
@@ -50,6 +57,7 @@ router.get('/users/:userId/predictions', requireAuth, async (req: AuthRequest, r
       matches: (matchRows as any[]).map((m) => ({
         ...normalise(m),
         prediction: preds[`match${m.match_number}`] ?? null,
+        result: (oddvarData[`match${m.match_number}`] as 'H' | 'D' | 'A' | null) ?? null,
       })),
     });
   } catch (err) {
