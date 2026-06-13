@@ -110,7 +110,9 @@ export default function KnockoutPage() {
           first_name: localStorage.getItem('firstName') || '',
           last_name: localStorage.getItem('lastName') || '',
         };
-        const otherUsers = usersList.filter((u) => u.id !== loggedInUserId);
+        const otherUsers = usersList
+          .filter((u) => u.id !== loggedInUserId)
+          .sort((a, b) => a.last_name.localeCompare(b.last_name));
         setUsers([loggedInUser, ...otherUsers]);
       })
       .catch(() => {
