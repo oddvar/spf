@@ -136,7 +136,7 @@ export default function KnockoutPage() {
           // Re-fetch group matches and best-thirds for context
           const [group, thirds] = await Promise.all([
             get<{ matches: GroupMatchFull[]; canEdit: boolean }>('/matches'),
-            get<{ selections: string[] }>('/best-thirds'),
+            get<{ selections: string[] }>(`/users/${selectedUserId}/best-thirds`),
           ]);
           setGroupMatches(group.matches.filter((m) => m.group_name));
           setBestThirds(thirds.selections);
