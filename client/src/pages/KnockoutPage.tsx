@@ -125,7 +125,10 @@ export default function KnockoutPage() {
       if (selectedUserId) {
         // Fetch selected user's knockout predictions
         try {
-          const ko = await get<any>(`/users/${selectedUserId}/knockout`);
+          const [ko, thirds] = await Promise.all([
+            get<any>(`/users/${selectedUserId}/knockout`),
+            get<{ selections: string[]; matches: GroupMatchFull[] }>(`/users/${selectedUserId}/best-thirds`),
+          ]);
           setKoMatches(ko.r32Predictions);
           setR16Preds(ko.r16Predictions);
           setQfPreds(ko.qfPredictions);
@@ -133,12 +136,7 @@ export default function KnockoutPage() {
           setFPred(ko.fPredictions[0] ?? null);
           setThirdPred(ko.thirdPrediction);
           setCanEdit(false);
-          // Re-fetch group matches and best-thirds for context
-          const [group, thirds] = await Promise.all([
-            get<{ matches: GroupMatchFull[]; canEdit: boolean }>('/matches'),
-            get<{ selections: string[] }>(`/users/${selectedUserId}/best-thirds`),
-          ]);
-          setGroupMatches(group.matches.filter((m) => m.group_name));
+          setGroupMatches(thirds.matches.filter((m) => m.group_name));
           setBestThirds(thirds.selections);
           setLoading(false);
         } catch (err) {
