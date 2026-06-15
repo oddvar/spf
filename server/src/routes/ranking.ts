@@ -24,12 +24,13 @@ interface UserRanking {
 
 router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const cutoff = req.query.cutoff ? parseInt(req.query.cutoff as string) : null;
+    const cutoffParam = req.query.cutoff ? parseInt(req.query.cutoff as string) : null;
+    const cutoff = cutoffParam && !isNaN(cutoffParam) ? cutoffParam : null;
+    const limitCount = cutoff || 72;
 
     // Get group stage matches ordered by datetime
     const [matchRows] = await pool.execute(
-      `SELECT match_number FROM matches WHERE stage IS NULL ORDER BY match_datetime LIMIT ?`,
-      [cutoff || 72],
+      `SELECT match_number FROM matches WHERE stage IS NULL ORDER BY match_datetime LIMIT ${limitCount}`
     );
     const cutoffMatchNumbers = new Set((matchRows as any[]).map((m) => m.match_number));
 
