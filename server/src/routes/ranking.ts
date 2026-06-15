@@ -24,6 +24,15 @@ interface UserRanking {
 
 router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
+    const cutoff = req.query.cutoff ? parseInt(req.query.cutoff as string) : null;
+
+    // Get group stage matches ordered by datetime
+    const [matchRows] = await pool.execute(
+      `SELECT match_number FROM matches WHERE stage IS NULL ORDER BY match_datetime LIMIT ?`,
+      [cutoff || 72],
+    );
+    const cutoffMatchNumbers = new Set((matchRows as any[]).map((m) => m.match_number));
+
     // Get all active users except oddvar@geheb.com
     const predCols = Array.from({ length: MATCH_COUNT }, (_, i) => `match${i + 1}`).join(', ');
     const [userRows] = await pool.execute(
@@ -54,9 +63,17 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
     let maxWinnerScore = 0;
 
     // Count group stage predictions that have been set in oddvar's data
-    for (let i = 1; i <= 72; i++) {
-      if (oddvarData[`match${i}`]) {
-        maxGroupStageScore += 1;
+    if (cutoff) {
+      for (const matchNum of cutoffMatchNumbers) {
+        if (oddvarData[`match${matchNum}`]) {
+          maxGroupStageScore += 1;
+        }
+      }
+    } else {
+      for (let i = 1; i <= 72; i++) {
+        if (oddvarData[`match${i}`]) {
+          maxGroupStageScore += 1;
+        }
       }
     }
 
@@ -119,11 +136,21 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       let winnerScore = 0;
 
       // Group stage: 1 point per correct prediction (only matches oddvar has set)
-      for (let i = 1; i <= 72; i++) {
-        const userPred = user[`match${i}`];
-        const correctPred = oddvarData[`match${i}`];
-        if (userPred && correctPred && userPred === correctPred) {
-          groupStageScore += 1;
+      if (cutoff) {
+        for (const matchNum of cutoffMatchNumbers) {
+          const userPred = user[`match${matchNum}`];
+          const correctPred = oddvarData[`match${matchNum}`];
+          if (userPred && correctPred && userPred === correctPred) {
+            groupStageScore += 1;
+          }
+        }
+      } else {
+        for (let i = 1; i <= 72; i++) {
+          const userPred = user[`match${i}`];
+          const correctPred = oddvarData[`match${i}`];
+          if (userPred && correctPred && userPred === correctPred) {
+            groupStageScore += 1;
+          }
         }
       }
 

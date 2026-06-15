@@ -26,47 +26,18 @@ export default function RankingPage() {
   const [cutoffMatchNumber, setCutoffMatchNumber] = useState<number | null>(null);
 
   useEffect(() => {
-    get<UserRanking[]>('/ranking')
+    const url = cutoffMatchNumber ? `/ranking?cutoff=${cutoffMatchNumber}` : '/ranking';
+    setLoading(true);
+    get<UserRanking[]>(url)
       .then(setRankings)
       .catch((err) => {
         console.error('Failed to fetch rankings:', err);
         setError('Failed to load rankings');
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [cutoffMatchNumber]);
 
   const maxPossibleScore = rankings.length > 0 ? rankings[0].maxPossibleScore : 0;
-
-  // Filter rankings based on cutoff match number
-  const getFilteredRankings = () => {
-    if (!cutoffMatchNumber) return rankings;
-
-    return rankings.map((user) => {
-      const groupMatches = Math.min(cutoffMatchNumber, 72); // max 72 group stage matches
-      const groupPoints = Math.min(user.groupStageScore, groupMatches);
-
-      return {
-        ...user,
-        groupStageScore: groupPoints,
-        totalScore: groupPoints, // Only show group stage score
-        r32Score: 0,
-        r16Score: 0,
-        qfScore: 0,
-        sfScore: 0,
-        finalScore: 0,
-        thirdPlaceScore: 0,
-        winnerScore: 0,
-      };
-    }).sort((a, b) => {
-      if (b.totalScore !== a.totalScore) {
-        return b.totalScore - a.totalScore;
-      }
-      return a.last_name.localeCompare(b.last_name);
-    });
-  };
-
-  const displayedRankings = getFilteredRankings();
-  const displayedMaxScore = cutoffMatchNumber ? Math.min(cutoffMatchNumber, 72) : maxPossibleScore;
 
   return (
     <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
@@ -88,7 +59,7 @@ export default function RankingPage() {
         <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>matches</span>
       </div>
       <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-        Current max points: {displayedMaxScore}
+        Current max points: {maxPossibleScore}
       </p>
 
       {error && <div style={{ color: '#cc0000', marginBottom: '1rem' }}>{error}</div>}
@@ -117,9 +88,9 @@ export default function RankingPage() {
               </tr>
             </thead>
             <tbody>
-              {displayedRankings.map((user) => {
+              {rankings.map((user) => {
                 // Find rank: count how many users have a higher score, then add 1
-                const rank = 1 + displayedRankings.filter((u) => u.totalScore > user.totalScore).length;
+                const rank = 1 + rankings.filter((u) => u.totalScore > user.totalScore).length;
                 const isLoggedInUser = user.first_name === localStorage.getItem('firstName') &&
                                        user.last_name === localStorage.getItem('lastName');
                 const isGoldUser = user.first_name === 'Martin' && user.last_name === 'Gjerstad';
