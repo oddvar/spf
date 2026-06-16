@@ -1,4 +1,17 @@
+import { useEffect } from 'react';
+import { post } from '../api/client';
+
 export default function HelpPage() {
+  useEffect(() => {
+    // Log event when page loads
+    post('/events/log', {
+      event_type: 'help_page_loaded',
+      description: 'User accessed the help page',
+    }).catch(() => {
+      // Silently fail if event logging fails
+    });
+  }, []);
+
   return (
     <div className="help-page">
       <h1>How to use SPF 2026</h1>

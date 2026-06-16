@@ -31,6 +31,22 @@ async function columnExists(table: string, column: string): Promise<boolean> {
 
 export async function initDb(): Promise<void> {
   await pool.execute(`
+    CREATE TABLE IF NOT EXISTS events (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+      event_type VARCHAR(50) NOT NULL,
+      user_id VARCHAR(36),
+      user_email VARCHAR(255),
+      user_first_name VARCHAR(100),
+      user_last_name VARCHAR(100),
+      viewed_user_id VARCHAR(36),
+      description VARCHAR(255),
+      KEY (timestamp),
+      KEY (event_type)
+    )
+  `);
+
+  await pool.execute(`
     CREATE TABLE IF NOT EXISTS users (
       id              CHAR(36)      PRIMARY KEY,
       first_name      VARCHAR(100)  NOT NULL,

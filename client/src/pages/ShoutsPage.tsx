@@ -17,6 +17,16 @@ export default function ShoutsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Log event when page loads
+    post('/events/log', {
+      event_type: 'shouts_page_loaded',
+      description: 'User accessed the shouts page',
+    }).catch(() => {
+      // Silently fail if event logging fails
+    });
+  }, []);
+
+  useEffect(() => {
     get<Shout[]>('/shouts')
       .then(setShouts)
       .catch((err) => {
@@ -36,6 +46,13 @@ export default function ShoutsPage() {
         const newShout = await post<Shout>('/shouts', { comment });
         setShouts([newShout, ...shouts]);
         setComment('');
+        // Log event when shout is posted
+        post('/events/log', {
+          event_type: 'shout_posted',
+          description: `User posted a shout: "${comment.trim().substring(0, 50)}${comment.trim().length > 50 ? '...' : ''}"`,
+        }).catch(() => {
+          // Silently fail if event logging fails
+        });
       } catch (err) {
         if (err instanceof ApiError) {
           setError(err.message);

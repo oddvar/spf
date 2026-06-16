@@ -1,6 +1,6 @@
 import { useState, useActionState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { get, put, ApiError } from '../api/client';
+import { get, put, post, ApiError } from '../api/client';
 
 interface UserSettings {
   firstName: string;
@@ -32,11 +32,22 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [canEdit, setCanEdit] = useState(true);
 
-  function logout() {
+  async function logout() {
+    // Log event when user logs out
+    try {
+      await post('/events/log', {
+        event_type: 'user_logged_out',
+        description: 'User logged out from the settings page',
+      });
+    } catch {
+      // Silently fail if event logging fails
+    }
     localStorage.removeItem('token');
     localStorage.removeItem('firstName');
     localStorage.removeItem('lastName');
     localStorage.removeItem('canEdit');
+    localStorage.removeItem('email');
+    localStorage.removeItem('userId');
     navigate('/login');
   }
 
@@ -60,6 +71,16 @@ export default function SettingsPage() {
       .catch(() => {
         setLoading(false);
       });
+  }, []);
+
+  useEffect(() => {
+    // Log event when page loads
+    post('/events/log', {
+      event_type: 'settings_page_loaded',
+      description: 'User accessed the settings page',
+    }).catch(() => {
+      // Silently fail if event logging fails
+    });
   }, []);
 
   const [formError, submitAction, isPending] = useActionState(

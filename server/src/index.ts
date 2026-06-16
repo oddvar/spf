@@ -12,6 +12,7 @@ import shoutsRouter from './routes/shouts.js';
 import todayRouter from './routes/today.js';
 import rankingRouter from './routes/ranking.js';
 import usersRouter from './routes/users.js';
+import eventsRouter from './routes/events.js';
 
 const app = express();
 const PORT = Number(process.env.PORT ?? 3001);
@@ -28,6 +29,7 @@ app.use('/api', predictionsRouter);
 app.use('/api', bestThirdsRouter);
 app.use('/api', knockoutRouter);
 app.use('/api', settingsRouter);
+app.use('/api', eventsRouter);
 app.use('/api', shoutsRouter);
 app.use('/api', todayRouter);
 app.use('/api', rankingRouter);

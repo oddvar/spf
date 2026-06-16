@@ -10,6 +10,7 @@ import SettingsPage from './pages/SettingsPage';
 import ShoutsPage from './pages/ShoutsPage';
 import TodayPage from './pages/TodayPage';
 import RankingPage from './pages/RankingPage';
+import EventsPage from './pages/EventsPage';
 import avatarIcon from './assets/avatar.png';
 import './App.css';
 
@@ -50,7 +51,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function Nav({ showShouts }: { showShouts: boolean }) {
+function Nav({ showShouts, isOddvar }: { showShouts: boolean; isOddvar: boolean }) {
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
@@ -67,6 +68,7 @@ function Nav({ showShouts }: { showShouts: boolean }) {
         {showShouts && <Link to="/today" style={{ fontWeight: isActive('/today') ? 'bold' : 'normal' }}>Next</Link>}
         {showShouts && <Link to="/ranking" style={{ fontWeight: isActive('/ranking') ? 'bold' : 'normal' }}>Ranking</Link>}
         {showShouts && <Link to="/shouts" style={{ fontWeight: isActive('/shouts') ? 'bold' : 'normal' }}>Shouts</Link>}
+        {isOddvar && <Link to="/events" style={{ fontWeight: isActive('/events') ? 'bold' : 'normal' }}>Events</Link>}
         <Link to="/help" style={{ fontWeight: isActive('/help') ? 'bold' : 'normal' }}>Help</Link>
       </div>
       <div className="nav-right">
@@ -81,10 +83,13 @@ function Nav({ showShouts }: { showShouts: boolean }) {
 function AppRoutes() {
   useTheme();
   const [showShouts, setShowShouts] = useState(false);
+  const [isOddvar, setIsOddvar] = useState(false);
 
   useEffect(() => {
     const canViewOthers = localStorage.getItem('canViewOthers') === 'true';
+    const email = localStorage.getItem('email');
     setShowShouts(canViewOthers);
+    setIsOddvar(email === 'oddvar@geheb.com');
   }, []);
 
   return (
@@ -96,7 +101,7 @@ function AppRoutes() {
         path="/predictions"
         element={
           <ProtectedRoute>
-            <Nav showShouts={showShouts} />
+            <Nav showShouts={showShouts} isOddvar={isOddvar} />
             <PredictionsPage />
           </ProtectedRoute>
         }
@@ -105,7 +110,7 @@ function AppRoutes() {
         path="/best-thirds"
         element={
           <ProtectedRoute>
-            <Nav showShouts={showShouts} />
+            <Nav showShouts={showShouts} isOddvar={isOddvar} />
             <BestThirdsPage />
           </ProtectedRoute>
         }
@@ -114,7 +119,7 @@ function AppRoutes() {
         path="/knockout"
         element={
           <ProtectedRoute>
-            <Nav showShouts={showShouts} />
+            <Nav showShouts={showShouts} isOddvar={isOddvar} />
             <KnockoutPage />
           </ProtectedRoute>
         }
@@ -123,7 +128,7 @@ function AppRoutes() {
         path="/help"
         element={
           <ProtectedRoute>
-            <Nav showShouts={showShouts} />
+            <Nav showShouts={showShouts} isOddvar={isOddvar} />
             <HelpPage />
           </ProtectedRoute>
         }
@@ -132,7 +137,7 @@ function AppRoutes() {
         path="/settings"
         element={
           <ProtectedRoute>
-            <Nav showShouts={showShouts} />
+            <Nav showShouts={showShouts} isOddvar={isOddvar} />
             <SettingsPage />
           </ProtectedRoute>
         }
@@ -141,7 +146,7 @@ function AppRoutes() {
         path="/today"
         element={
           <ProtectedRoute>
-            <Nav showShouts={showShouts} />
+            <Nav showShouts={showShouts} isOddvar={isOddvar} />
             {showShouts ? <TodayPage /> : <Navigate to="/predictions" replace />}
           </ProtectedRoute>
         }
@@ -150,7 +155,7 @@ function AppRoutes() {
         path="/ranking"
         element={
           <ProtectedRoute>
-            <Nav showShouts={showShouts} />
+            <Nav showShouts={showShouts} isOddvar={isOddvar} />
             {showShouts ? <RankingPage /> : <Navigate to="/predictions" replace />}
           </ProtectedRoute>
         }
@@ -159,8 +164,17 @@ function AppRoutes() {
         path="/shouts"
         element={
           <ProtectedRoute>
-            <Nav showShouts={showShouts} />
+            <Nav showShouts={showShouts} isOddvar={isOddvar} />
             {showShouts ? <ShoutsPage /> : <Navigate to="/predictions" replace />}
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/events"
+        element={
+          <ProtectedRoute>
+            <Nav showShouts={showShouts} isOddvar={isOddvar} />
+            {isOddvar ? <EventsPage /> : <Navigate to="/predictions" replace />}
           </ProtectedRoute>
         }
       />

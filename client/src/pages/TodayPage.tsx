@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { get } from '../api/client';
+import { get, post } from '../api/client';
 import { VENUE_LINKS } from '../utils/venues';
 
 interface UserPrediction {
@@ -35,6 +35,16 @@ export default function TodayPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    // Log event when page loads
+    post('/events/log', {
+      event_type: 'today_page_loaded',
+      description: 'User loaded the next matches page',
+    }).catch(() => {
+      // Silently fail if event logging fails
+    });
+  }, []);
 
   useEffect(() => {
     const findNextDateWithMatches = async () => {

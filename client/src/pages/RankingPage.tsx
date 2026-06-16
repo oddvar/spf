@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { get } from '../api/client';
+import { get, post } from '../api/client';
 
 interface UserRanking {
   user_id: string;
@@ -25,6 +25,28 @@ export default function RankingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [cutoffMatchNumber, setCutoffMatchNumber] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Log event when page loads
+    post('/events/log', {
+      event_type: 'ranking_page_loaded',
+      description: 'User loaded the ranking page',
+    }).catch(() => {
+      // Silently fail if event logging fails
+    });
+  }, []);
+
+  useEffect(() => {
+    // Log event when cutoff selection changes (but not on initial mount)
+    if (cutoffMatchNumber !== null) {
+      post('/events/log', {
+        event_type: 'ranking_cutoff_changed',
+        description: `User selected ranking cutoff: ${cutoffMatchNumber} matches`,
+      }).catch(() => {
+        // Silently fail if event logging fails
+      });
+    }
+  }, [cutoffMatchNumber]);
 
   useEffect(() => {
     const url = cutoffMatchNumber ? `/ranking?cutoff=${cutoffMatchNumber}` : '/ranking';

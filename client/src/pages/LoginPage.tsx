@@ -56,6 +56,7 @@ export default function LoginPage() {
       localStorage.setItem('userId', data.user.id);
       localStorage.setItem('firstName', data.user.firstName);
       localStorage.setItem('lastName', data.user.lastName);
+      localStorage.setItem('email', email.trim());
       localStorage.setItem('canEdit', String(data.user.canEdit));
       localStorage.setItem('canViewOthers', String(data.canViewOthers));
       navigate('/predictions');

@@ -44,6 +44,18 @@ router.post('/login', async (req: Request, res: Response) => {
     }>;
 
     if (users.length === 0) {
+      // Log failed login attempt (user not found)
+      await pool.execute(
+        `INSERT INTO events (event_type, user_email, description)
+         VALUES (?, ?, ?)`,
+        [
+          'login_failed',
+          email.trim(),
+          'Failed login attempt: user not found',
+        ],
+      ).catch((err) => {
+        console.error('Failed to log login event:', err);
+      });
       res.status(401).json({ error: 'Invalid email or password' });
       return;
     }
@@ -51,12 +63,42 @@ router.post('/login', async (req: Request, res: Response) => {
     const user = users[0];
 
     if (!user.active) {
+      // Log failed login attempt (account deactivated)
+      await pool.execute(
+        `INSERT INTO events (event_type, user_id, user_email, user_first_name, user_last_name, description)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          'login_failed',
+          user.id,
+          user.email,
+          user.first_name,
+          user.last_name,
+          'Failed login attempt: account deactivated',
+        ],
+      ).catch((err) => {
+        console.error('Failed to log login event:', err);
+      });
       res.status(403).json({ error: 'Your account has been deactivated' });
       return;
     }
 
     const passwordMatch = await bcrypt.compare(password, user.password_hash);
     if (!passwordMatch) {
+      // Log failed login attempt (wrong password)
+      await pool.execute(
+        `INSERT INTO events (event_type, user_id, user_email, user_first_name, user_last_name, description)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          'login_failed',
+          user.id,
+          user.email,
+          user.first_name,
+          user.last_name,
+          'Failed login attempt: wrong password',
+        ],
+      ).catch((err) => {
+        console.error('Failed to log login event:', err);
+      });
       res.status(401).json({ error: 'Invalid email or password' });
       return;
     }
@@ -67,6 +109,22 @@ router.post('/login', async (req: Request, res: Response) => {
     const token = jwt.sign({ id: user.id}, secret, { expiresIn: '7d' });
 
     await pool.execute(`UPDATE users SET last_login = NOW() WHERE id = ?`, [user.id]);
+
+    // Log successful login event
+    await pool.execute(
+      `INSERT INTO events (event_type, user_id, user_email, user_first_name, user_last_name, description)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        'user_login',
+        user.id,
+        user.email,
+        user.first_name,
+        user.last_name,
+        `User logged in successfully`,
+      ],
+    ).catch((err) => {
+      console.error('Failed to log login event:', err);
+    });
 
     res.json({
       token,

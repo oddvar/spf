@@ -1,6 +1,6 @@
 import { useState, useEffect, useTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { get, put, ApiError } from '../api/client';
+import { get, put, post, ApiError } from '../api/client';
 import { VENUE_LINKS } from '../utils/venues';
 
 type Prediction = 'H' | 'D' | 'A';
@@ -54,6 +54,24 @@ export default function PredictionsPage() {
   }
   const [isPending, startTransition] = useTransition();
   const [savingId, setSavingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Log event when page loads or selectedUserId changes
+    let description = 'User viewing their own predictions';
+    if (selectedUserId) {
+      const selectedUser = users.find((u) => u.id === selectedUserId);
+      if (selectedUser) {
+        description = `User viewing predictions for ${selectedUser.first_name} ${selectedUser.last_name}`;
+      }
+    }
+    post('/events/log', {
+      event_type: 'predictions_page_loaded',
+      viewed_user_id: selectedUserId || null,
+      description,
+    }).catch(() => {
+      // Silently fail if event logging fails
+    });
+  }, [selectedUserId, users]);
 
   useEffect(() => {
     setLoading(true);
