@@ -22,6 +22,11 @@ interface UserRanking {
   koWinner: string | null;
 }
 
+interface RankingResponse {
+  rankings: UserRanking[];
+  maxMatchesWithResults: number;
+}
+
 router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const cutoffParam = req.query.cutoff ? parseInt(req.query.cutoff as string) : null;
@@ -235,7 +240,18 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       return a.last_name.localeCompare(b.last_name);
     });
 
-    res.json(rankings);
+    // Count how many matches oddvar has predictions for
+    let maxMatchesWithResults = 0;
+    for (let i = 1; i <= 72; i++) {
+      if (oddvarData[`match${i}`]) {
+        maxMatchesWithResults += 1;
+      }
+    }
+
+    res.json({
+      rankings,
+      maxMatchesWithResults,
+    });
   } catch (err) {
     console.error('Error fetching ranking:', err);
     res.status(500).json({ error: 'Failed to fetch ranking' });

@@ -21,6 +21,7 @@ interface UserRanking {
 
 export default function RankingPage() {
   const [rankings, setRankings] = useState<UserRanking[]>([]);
+  const [maxMatchesWithResults, setMaxMatchesWithResults] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [cutoffMatchNumber, setCutoffMatchNumber] = useState<number | null>(null);
@@ -28,8 +29,11 @@ export default function RankingPage() {
   useEffect(() => {
     const url = cutoffMatchNumber ? `/ranking?cutoff=${cutoffMatchNumber}` : '/ranking';
     setLoading(true);
-    get<UserRanking[]>(url)
-      .then(setRankings)
+    get<{ rankings: UserRanking[]; maxMatchesWithResults: number }>(url)
+      .then((data) => {
+        setRankings(data.rankings);
+        setMaxMatchesWithResults(data.maxMatchesWithResults);
+      })
       .catch((err) => {
         console.error('Failed to fetch rankings:', err);
         setError('Failed to load rankings');
@@ -50,7 +54,7 @@ export default function RankingPage() {
           style={{ padding: '0.5rem', fontSize: '1rem' }}
         >
           <option value="">all</option>
-          {Array.from({ length: maxPossibleScore }, (_, i) => i + 1).map((matchNum) => (
+          {Array.from({ length: maxMatchesWithResults }, (_, i) => i + 1).map((matchNum) => (
             <option key={matchNum} value={matchNum}>
               {matchNum}
             </option>
