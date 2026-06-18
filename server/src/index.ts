@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import { initDb } from './db.js';
 import { seedMatches, seedKnockoutMatches } from './seeds/matches.js';
+import { syncMatchResults } from './jobs/matchResultsSync.js';
 import authRouter from './routes/auth.js';
 import predictionsRouter from './routes/predictions.js';
 import bestThirdsRouter from './routes/bestThirds.js';
@@ -38,6 +39,7 @@ app.use('/api', usersRouter);
 initDb()
   .then(seedMatches)
   .then(seedKnockoutMatches)
+  .then(syncMatchResults)
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
