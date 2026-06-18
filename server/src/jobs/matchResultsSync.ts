@@ -267,6 +267,9 @@ async function processSyncQueue(): Promise<void> {
 
   isProcessing = true;
 
+  // Sort queue by scheduledTime so items waiting longest are processed first
+  syncQueue.sort((a, b) => a.scheduledTime.getTime() - b.scheduledTime.getTime());
+
   // Get the first item in queue
   const item = syncQueue.shift()!;
   const now = new Date();
