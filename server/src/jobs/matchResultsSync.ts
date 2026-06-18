@@ -29,9 +29,13 @@ interface QueueItem {
   attempt: number;
 }
 
-const API_TOKEN = 'getyourown';
+const API_TOKEN = process.env.FOOTBALL_DATA_API_TOKEN;
 const API_BASE_URL = 'https://api.football-data.org/v4/competitions/WC/matches';
 const SYNC_INTERVAL_MS = 60 * 1000; // 60 seconds
+
+if (!API_TOKEN) {
+  throw new Error('FOOTBALL_DATA_API_TOKEN environment variable is required');
+}
 
 let syncQueue: QueueItem[] = [];
 let isProcessing = false;
@@ -55,9 +59,10 @@ async function getMatchResults(
       },
     });
 
-    console.log(`${logPrefix}: Full API response:`, JSON.stringify(response.data, null, 2));
+    const responseData = response.data as any;
+    console.log(`${logPrefix}: Full API response:`, JSON.stringify(responseData, null, 2));
 
-    const matches = response.data.matches || [];
+    const matches = (responseData.matches || []) as FootballDataMatch[];
     console.log(
       `${logPrefix}: API returned successfully with ${matches.length} matches`,
     );
