@@ -69,14 +69,33 @@ router.get('/events', requireAuth, async (req: AuthRequest, res: Response) => {
       return;
     }
 
+    const pageNum = req.query.page ? parseInt(req.query.page as string) : 1;
+    const limitNum = req.query.limit ? parseInt(req.query.limit as string) : 20;
+    const page = Math.max(1, isNaN(pageNum) ? 1 : pageNum);
+    const limit = Math.max(1, Math.min(100, isNaN(limitNum) ? 20 : limitNum));
+    const offset = (page - 1) * limit;
+
+    // Get total count
+    const [countRows] = await pool.execute('SELECT COUNT(*) as total FROM events', []);
+    const total = (countRows as any[])[0].total;
+
+    // Get paginated events
     const [events] = await pool.execute(
       `SELECT id, timestamp, event_type, user_id, user_email, user_first_name, user_last_name, viewed_user_id, description
        FROM events
        ORDER BY timestamp DESC
-       LIMIT 20`,
+       LIMIT ${limit} OFFSET ${offset}`,
     );
 
-    res.json(events);
+    res.json({
+      events,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (err) {
     console.error('Error fetching events:', err);
     res.status(500).json({ error: 'Failed to fetch events' });
