@@ -14,6 +14,7 @@ import todayRouter from './routes/today.js';
 import rankingRouter from './routes/ranking.js';
 import usersRouter from './routes/users.js';
 import eventsRouter from './routes/events.js';
+import groupsRouter from './routes/groups.js';
 
 const app = express();
 const PORT = Number(process.env.PORT ?? 3001);
@@ -35,6 +36,7 @@ app.use('/api', shoutsRouter);
 app.use('/api', todayRouter);
 app.use('/api', rankingRouter);
 app.use('/api', usersRouter);
+app.use('/api', groupsRouter);
 
 initDb()
   .then(seedMatches)

@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { pool, MATCH_COUNT } from '../db.js';
 import { requireAuth, AuthRequest } from '../middleware/auth.js';
+import { getAdvancementBonus } from '../jobs/groupStandings.js';
 
 const router = Router();
 
@@ -211,7 +212,67 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
         winnerScore = 15;
       }
 
-      const totalScore = groupStageScore + r32Score + r16Score + qfScore + sfScore + finalScore + thirdPlaceScore + winnerScore;
+      // Advancement bonus: 2 points per correct team advancement (in groups user selected for best thirds)
+      // Get confirmed advances from oddvar's r32 predictions and group standings
+      const confirmedAdvances: { team: string; group: string }[] = [];
+
+      // Get oddvar's group standings to map position codes to actual teams
+      const oddvarGroupStandings: { [key: string]: any[] } = {};
+      for (const groupLetter of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']) {
+        const columnName = `pred_group_${groupLetter.toLowerCase()}`;
+        const standing = oddvarData[columnName];
+        if (standing) {
+          oddvarGroupStandings[groupLetter] = JSON.parse(standing);
+        }
+      }
+
+      // Check which r32 matches oddvar has predictions for
+      // For each position code (1A, 2B, etc.), get the actual team from group standings
+      const positionCodeMap: { [key: string]: string } = {
+        '1A': 'A', '2A': 'A', '3A': 'A',
+        '1B': 'B', '2B': 'B', '3B': 'B',
+        '1C': 'C', '2C': 'C', '3C': 'C',
+        '1D': 'D', '2D': 'D', '3D': 'D',
+        '1E': 'E', '2E': 'E', '3E': 'E',
+        '1F': 'F', '2F': 'F', '3F': 'F',
+        '1G': 'G', '2G': 'G', '3G': 'G',
+        '1H': 'H', '2H': 'H', '3H': 'H',
+      };
+
+      // Get r32 matches to identify position codes
+      const [r32Rows] = await pool.execute(
+        'SELECT id, ko_number, home_team, away_team FROM matches WHERE stage = ? AND ko_number BETWEEN 1 AND 16',
+        ['r32'],
+      );
+
+      for (const match of r32Rows as any[]) {
+        const koNum = match.ko_number;
+        if (oddvarData[`ko${koNum}`]) {
+          // Oddvar has made a prediction for this match
+          const homeTeam = match.home_team;
+          const awayTeam = match.away_team;
+          const prediction = oddvarData[`ko${koNum}`];
+
+          // Get the winning team based on prediction
+          const positionCode = prediction === 'H' ? homeTeam : awayTeam;
+          const groupLetter = positionCodeMap[positionCode];
+
+          if (groupLetter && oddvarGroupStandings[groupLetter]) {
+            const standings = oddvarGroupStandings[groupLetter];
+            const positionNum = parseInt(positionCode[0]);
+            const teamStanding = standings.find((s: any) => s.position === positionNum);
+
+            if (teamStanding) {
+              confirmedAdvances.push({ team: teamStanding.team, group: groupLetter });
+            }
+          }
+        }
+      }
+
+      const advancementResult = await getAdvancementBonus(user.id, confirmedAdvances);
+      const advancementBonus = advancementResult.bonus;
+
+      const totalScore = groupStageScore + r32Score + r16Score + qfScore + sfScore + finalScore + thirdPlaceScore + winnerScore + advancementBonus;
 
       rankings.push({
         user_id: user.id,
