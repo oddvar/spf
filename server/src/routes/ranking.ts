@@ -32,8 +32,22 @@ interface RankingResponse {
 
 router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const cutoffParam = req.query.cutoff ? parseInt(req.query.cutoff as string) : null;
-    const cutoff = cutoffParam && !isNaN(cutoffParam) ? cutoffParam : null;
+    const cutoffParam = req.query.cutoff as string | undefined;
+    let cutoff: number | null = null;
+    let includeKnockout = false; // default: exclude knockout stages
+
+    if (cutoffParam === 'all+r32') {
+      // "all + round of 32" includes knockout stages
+      cutoff = null;
+      includeKnockout = true;
+    } else if (cutoffParam) {
+      // specific match numbers exclude knockout stages
+      const parsed = parseInt(cutoffParam);
+      cutoff = !isNaN(parsed) ? parsed : null;
+      includeKnockout = false;
+    }
+    // if cutoffParam is undefined, it's "all (group stage only)" - includeKnockout stays false
+
     const limitCount = cutoff || 72;
 
     // Get group stage matches ordered by datetime
@@ -164,74 +178,82 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       }
 
       // R32: 2 points per correct prediction (16 matches, ko1-ko16)
-      for (let i = 1; i <= 16; i++) {
-        const userPred = user[`ko${i}`];
-        const correctPred = oddvarData[`ko${i}`];
-        if (userPred && correctPred && userPred === correctPred) {
-          r32Score += 2;
+      if (includeKnockout) {
+        for (let i = 1; i <= 16; i++) {
+          const userPred = user[`ko${i}`];
+          const correctPred = oddvarData[`ko${i}`];
+          if (userPred && correctPred && userPred === correctPred) {
+            r32Score += 2;
+          }
         }
       }
 
-      // R16: 3 points per correct prediction (8 matches, ko17-ko24)
-      for (let i = 17; i <= 24; i++) {
-        const userPred = user[`ko${i}`];
-        const correctPred = oddvarData[`ko${i}`];
-        if (userPred && correctPred && userPred === correctPred) {
-          r16Score += 3;
+      // R16+: only calculate if including knockout stages
+      if (includeKnockout) {
+        // R16: 3 points per correct prediction (8 matches, ko17-ko24)
+        for (let i = 17; i <= 24; i++) {
+          const userPred = user[`ko${i}`];
+          const correctPred = oddvarData[`ko${i}`];
+          if (userPred && correctPred && userPred === correctPred) {
+            r16Score += 3;
+          }
+        }
+
+        // QF: 4 points per correct prediction (4 matches, ko25-ko28)
+        for (let i = 25; i <= 28; i++) {
+          const userPred = user[`ko${i}`];
+          const correctPred = oddvarData[`ko${i}`];
+          if (userPred && correctPred && userPred === correctPred) {
+            qfScore += 4;
+          }
+        }
+
+        // SF: 5 points per correct prediction (2 matches, ko29-ko30)
+        for (let i = 29; i <= 30; i++) {
+          const userPred = user[`ko${i}`];
+          const correctPred = oddvarData[`ko${i}`];
+          if (userPred && correctPred && userPred === correctPred) {
+            sfScore += 5;
+          }
+        }
+
+        // Final: 6 points (ko31)
+        if (user.ko31 && oddvarData.ko31 && user.ko31 === oddvarData.ko31) {
+          finalScore = 6;
+        }
+
+        // Third place: 7 points (ko32)
+        if (user.ko32 && oddvarData.ko32 && user.ko32 === oddvarData.ko32) {
+          thirdPlaceScore = 7;
+        }
+
+        // Winner: 15 points (based on ko_winner)
+        if (user.ko_winner && oddvarData.ko_winner && user.ko_winner === oddvarData.ko_winner) {
+          winnerScore = 15;
         }
       }
 
-      // QF: 4 points per correct prediction (4 matches, ko25-ko28)
-      for (let i = 25; i <= 28; i++) {
-        const userPred = user[`ko${i}`];
-        const correctPred = oddvarData[`ko${i}`];
-        if (userPred && correctPred && userPred === correctPred) {
-          qfScore += 4;
+      // Advancement bonus: only calculate if including knockout stages
+      let advancementScore = 0;
+      if (includeKnockout) {
+        // Winner + runner-up: award if user predicted them (regardless of best thirds selection)
+        // Best third: award if user predicted them AND oddvar selected that group for best thirds
+        const confirmedGroups: { [key: string]: any[] } = {};
+
+        for (const groupLetter of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']) {
+          const columnName = `pred_group_${groupLetter.toLowerCase()}`;
+          const standing = oddvarData[columnName];
+
+          if (standing) {
+            // Group has confirmed standings
+            const standings = typeof standing === 'string' ? JSON.parse(standing) : standing;
+            confirmedGroups[groupLetter] = standings;
+          }
         }
+
+        const advancementResult = await getAdvancementBonus(user.id, confirmedGroups);
+        advancementScore = advancementResult.bonus;
       }
-
-      // SF: 5 points per correct prediction (2 matches, ko29-ko30)
-      for (let i = 29; i <= 30; i++) {
-        const userPred = user[`ko${i}`];
-        const correctPred = oddvarData[`ko${i}`];
-        if (userPred && correctPred && userPred === correctPred) {
-          sfScore += 5;
-        }
-      }
-
-      // Final: 6 points (ko31)
-      if (user.ko31 && oddvarData.ko31 && user.ko31 === oddvarData.ko31) {
-        finalScore = 6;
-      }
-
-      // Third place: 7 points (ko32)
-      if (user.ko32 && oddvarData.ko32 && user.ko32 === oddvarData.ko32) {
-        thirdPlaceScore = 7;
-      }
-
-      // Winner: 15 points (based on ko_winner)
-      if (user.ko_winner && oddvarData.ko_winner && user.ko_winner === oddvarData.ko_winner) {
-        winnerScore = 15;
-      }
-
-      // Advancement bonus: 2 points per correct team advancement
-      // Winner + runner-up: award if user predicted them (regardless of best thirds selection)
-      // Best third: award if user predicted them AND oddvar selected that group for best thirds
-      const confirmedGroups: { [key: string]: any[] } = {};
-
-      for (const groupLetter of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']) {
-        const columnName = `pred_group_${groupLetter.toLowerCase()}`;
-        const standing = oddvarData[columnName];
-
-        if (standing) {
-          // Group has confirmed standings
-          const standings = typeof standing === 'string' ? JSON.parse(standing) : standing;
-          confirmedGroups[groupLetter] = standings;
-        }
-      }
-
-      const advancementResult = await getAdvancementBonus(user.id, confirmedGroups);
-      const advancementScore = advancementResult.bonus;
 
       const totalScore = groupStageScore + r32Score + advancementScore + r16Score + qfScore + sfScore + finalScore + thirdPlaceScore + winnerScore;
 

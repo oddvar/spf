@@ -26,7 +26,7 @@ export default function RankingPage() {
   const [maxMatchesWithResults, setMaxMatchesWithResults] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [cutoffMatchNumber, setCutoffMatchNumber] = useState<number | null>(null);
+  const [cutoffMatchNumber, setCutoffMatchNumber] = useState<number | null | string>('all+r32');
 
   useEffect(() => {
     // Log event when page loads
@@ -51,7 +51,10 @@ export default function RankingPage() {
   }, [cutoffMatchNumber]);
 
   useEffect(() => {
-    const url = cutoffMatchNumber ? `/ranking?cutoff=${cutoffMatchNumber}` : '/ranking';
+    let url = '/ranking';
+    if (cutoffMatchNumber) {
+      url = `/ranking?cutoff=${encodeURIComponent(cutoffMatchNumber)}`;
+    }
     setLoading(true);
     get<{ rankings: UserRanking[]; maxMatchesWithResults: number }>(url)
       .then((data) => {
@@ -74,10 +77,16 @@ export default function RankingPage() {
         <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>Show ranking after</span>
         <select
           value={cutoffMatchNumber ?? ''}
-          onChange={(e) => setCutoffMatchNumber(e.target.value ? parseInt(e.target.value) : null)}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === '') setCutoffMatchNumber(null);
+            else if (val === 'all+r32') setCutoffMatchNumber('all+r32');
+            else setCutoffMatchNumber(parseInt(val));
+          }}
           style={{ padding: '0.5rem', fontSize: '1rem' }}
         >
-          <option value="">all</option>
+          <option value="">all (group stage only)</option>
+          <option value="all+r32">all + round of 32</option>
           {Array.from({ length: maxMatchesWithResults }, (_, i) => i + 1).map((matchNum) => (
             <option key={matchNum} value={matchNum}>
               {matchNum}
