@@ -32,21 +32,9 @@ interface RankingResponse {
 
 router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const cutoffParam = req.query.cutoff as string | undefined;
-    let cutoff: number | null = null;
-    let includeKnockout = false; // default: exclude knockout stages
-
-    if (cutoffParam === 'all+r32') {
-      // "all + round of 32" includes knockout stages
-      cutoff = null;
-      includeKnockout = true;
-    } else if (cutoffParam) {
-      // specific match numbers exclude knockout stages
-      const parsed = parseInt(cutoffParam);
-      cutoff = !isNaN(parsed) ? parsed : null;
-      includeKnockout = false;
-    }
-    // if cutoffParam is undefined, it's "all (group stage only)" - includeKnockout stays false
+    const cutoffParam = req.query.cutoff ? parseInt(req.query.cutoff as string) : null;
+    const cutoff = cutoffParam && !isNaN(cutoffParam) ? cutoffParam : null;
+    const includeKnockout = false; // "all (group stage only)" - exclude knockout stages
 
     const limitCount = cutoff || 72;
 
