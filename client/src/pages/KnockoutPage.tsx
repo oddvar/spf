@@ -57,6 +57,8 @@ interface KoMatch {
   home_team: string; away_team: string;
   match_datetime: string; location: string | null;
   prediction: KoPred | null;
+  homeTeamActive?: boolean;
+  awayTeamActive?: boolean;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -81,6 +83,7 @@ export default function KnockoutPage() {
   const [selectedUserId, setSelectedUserId] = useState<string>(
     () => localStorage.getItem('selectedUserId') ?? '',
   );
+  const [inactiveTeams, setInactiveTeams] = useState<Set<string>>(new Set());
 
   const updateSelectedUserId = (userId: string) => {
     setSelectedUserId(userId);
@@ -125,11 +128,13 @@ export default function KnockoutPage() {
       if (selectedUserId) {
         // Fetch selected user's knockout predictions
         try {
-          const [ko, thirds] = await Promise.all([
+          const [ko, thirds, inactiveRes] = await Promise.all([
             get<any>(`/users/${selectedUserId}/knockout`),
             get<{ selections: string[]; matches: GroupMatchFull[] }>(`/users/${selectedUserId}/best-thirds`),
+            get<{ inactiveTeams: string[] }>('/knockout/inactive-teams'),
           ]);
           setKoMatches(ko.r32Predictions);
+          setInactiveTeams(new Set(inactiveRes.inactiveTeams));
           setR16Preds(ko.r16Predictions);
           setQfPreds(ko.qfPredictions);
           setSfPreds(ko.sfPredictions);
@@ -146,12 +151,14 @@ export default function KnockoutPage() {
       } else {
         // Fetch own knockout predictions
         try {
-          const [ko, group, thirds] = await Promise.all([
+          const [ko, group, thirds, inactiveRes] = await Promise.all([
             get<{ r32Predictions: KoMatch[]; canEdit: boolean; r16Predictions: (string | null)[]; qfPredictions: (string | null)[]; sfPredictions: (string | null)[]; fPredictions: (string | null)[]; thirdPrediction: string | null }>('/knockout/matches'),
             get<{ matches: GroupMatchFull[]; canEdit: boolean }>('/matches'),
             get<{ selections: string[] }>('/best-thirds'),
+            get<{ inactiveTeams: string[] }>('/knockout/inactive-teams'),
           ]);
           setKoMatches(ko.r32Predictions);
+          setInactiveTeams(new Set(inactiveRes.inactiveTeams));
           setR16Preds(ko.r16Predictions);
           setQfPreds(ko.qfPredictions);
           setSfPreds(ko.sfPredictions);
@@ -633,14 +640,14 @@ export default function KnockoutPage() {
                     className={`bracket-team${pred === 'H' ? ' bracket-team--winner' : ''}${homeClick ? ' bracket-team--clickable' : ''}`}
                     onClick={homeClick}
                   >
-                    <span className="bracket-team-name">{home}</span>
+                    <span className="bracket-team-name" style={{ textDecoration: inactiveTeams.has(home) ? 'line-through' : 'none' }}>{home}</span>
                     {pred === 'H' && <span className="bracket-check">✓</span>}
                   </div>
                   <div
                     className={`bracket-team${pred === 'A' ? ' bracket-team--winner' : ''}${awayClick ? ' bracket-team--clickable' : ''}`}
                     onClick={awayClick}
                   >
-                    <span className="bracket-team-name">{away}</span>
+                    <span className="bracket-team-name" style={{ textDecoration: inactiveTeams.has(away) ? 'line-through' : 'none' }}>{away}</span>
                     {pred === 'A' && <span className="bracket-check">✓</span>}
                   </div>
                 </div>
@@ -689,14 +696,14 @@ export default function KnockoutPage() {
                   className={`bracket-team${thirdPred === 'H' ? ' bracket-team--winner' : ''}${tpEnabled ? ' bracket-team--clickable' : ''}`}
                   onClick={tpEnabled ? () => predictThird('H') : undefined}
                 >
-                  <span className="bracket-team-name">{home}</span>
+                  <span className="bracket-team-name" style={{ textDecoration: inactiveTeams.has(home) ? 'line-through' : 'none' }}>{home}</span>
                   {thirdPred === 'H' && <span className="bracket-check">✓</span>}
                 </div>
                 <div
                   className={`bracket-team${thirdPred === 'A' ? ' bracket-team--winner' : ''}${tpEnabled ? ' bracket-team--clickable' : ''}`}
                   onClick={tpEnabled ? () => predictThird('A') : undefined}
                 >
-                  <span className="bracket-team-name">{away}</span>
+                  <span className="bracket-team-name" style={{ textDecoration: inactiveTeams.has(away) ? 'line-through' : 'none' }}>{away}</span>
                   {thirdPred === 'A' && <span className="bracket-check">✓</span>}
                 </div>
               </div>

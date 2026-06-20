@@ -8,6 +8,7 @@ interface UserRanking {
   paymentStatus: 'NO' | 'WANTS_TO_PAY' | 'HAS_PAID';
   groupStageScore: number;
   r32Score: number;
+  advancementScore: number;
   r16Score: number;
   qfScore: number;
   sfScore: number;
@@ -17,6 +18,7 @@ interface UserRanking {
   totalScore: number;
   maxPossibleScore: number;
   koWinner: string | null;
+  koWinnerActive: boolean | null;
 }
 
 export default function RankingPage() {
@@ -127,7 +129,7 @@ export default function RankingPage() {
                       {user.first_name} {user.last_name}{user.paymentStatus === 'NO' ? '*' : ''}
                     </td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.groupStageScore}</td>
-                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.r32Score}</td>
+                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.r32Score + user.advancementScore}</td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.r16Score}</td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.qfScore}</td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.sfScore}</td>
@@ -137,7 +139,7 @@ export default function RankingPage() {
                     <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold', color: 'var(--accent)' }}>
                       {user.totalScore}
                     </td>
-                    <td style={{ padding: '0.5rem', textAlign: 'left', fontSize: '0.9rem' }}>
+                    <td style={{ padding: '0.5rem', textAlign: 'left', fontSize: '0.9rem', textDecoration: user.koWinnerActive === false ? 'line-through' : 'none' }}>
                       {user.koWinner || '—'}
                     </td>
                   </tr>

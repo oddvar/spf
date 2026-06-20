@@ -9,7 +9,7 @@ const PRED_COLS = Array.from({ length: MATCH_COUNT }, (_, i) => `match${i + 1}`)
 router.get('/users/list', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const [users] = await pool.execute(
-      'SELECT id, first_name, last_name FROM users WHERE id != ? AND email != ? AND active = 1 ORDER BY first_name, last_name',
+      'SELECT id, first_name, last_name FROM users WHERE id != ? AND email != ? AND active = 1 ORDER BY last_name, first_name',
       [req.userId!, 'oddvar@geheb.com'],
     );
     res.json(users);
@@ -131,10 +131,22 @@ router.get('/users/:userId/knockout', requireAuth, async (req: AuthRequest, res:
       match_datetime: (m.match_datetime as string).replace(' ', 'T') + 'Z',
     });
 
+    // Get team active status
+    const [teamRows] = await pool.execute(
+      `SELECT name, active FROM teams WHERE name IN (${(matchRows as any[]).map(() => '?').join(',')})`,
+      (matchRows as any[]).flatMap((m) => [m.home_team, m.away_team]),
+    );
+    const teamActiveMap: { [key: string]: boolean } = {};
+    for (const team of teamRows as any[]) {
+      teamActiveMap[team.name] = team.active === 1;
+    }
+
     res.json({
       r32Predictions: (matchRows as any[]).map((m) => ({
         ...normalise(m),
         prediction: userData[`ko${m.ko_number}`] ?? null,
+        homeTeamActive: teamActiveMap[m.home_team] !== false,
+        awayTeamActive: teamActiveMap[m.away_team] !== false,
       })),
       r16Predictions: Array.from({ length: 8 }, (_, i) => userData[`ko${17 + i}`] ?? null),
       qfPredictions: Array.from({ length: 4 }, (_, i) => userData[`ko${25 + i}`] ?? null),

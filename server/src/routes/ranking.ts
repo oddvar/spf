@@ -12,6 +12,7 @@ interface UserRanking {
   paymentStatus: 'NO' | 'WANTS_TO_PAY' | 'HAS_PAID';
   groupStageScore: number;
   r32Score: number;
+  advancementScore: number;
   r16Score: number;
   qfScore: number;
   sfScore: number;
@@ -21,6 +22,7 @@ interface UserRanking {
   totalScore: number;
   maxPossibleScore: number;
   koWinner: string | null;
+  koWinnerActive: boolean | null;
 }
 
 interface RankingResponse {
@@ -212,67 +214,42 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
         winnerScore = 15;
       }
 
-      // Advancement bonus: 2 points per correct team advancement (in groups user selected for best thirds)
-      // Get confirmed advances from oddvar's r32 predictions and group standings
-      const confirmedAdvances: { team: string; group: string }[] = [];
+      // Advancement bonus: 2 points per correct team advancement
+      // Winner + runner-up: award if user predicted them (regardless of best thirds selection)
+      // Best third: award if user predicted them AND oddvar selected that group for best thirds
+      const confirmedGroups: { [key: string]: any[] } = {};
 
-      // Get oddvar's group standings to map position codes to actual teams
-      const oddvarGroupStandings: { [key: string]: any[] } = {};
       for (const groupLetter of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']) {
         const columnName = `pred_group_${groupLetter.toLowerCase()}`;
         const standing = oddvarData[columnName];
+
         if (standing) {
-          oddvarGroupStandings[groupLetter] = JSON.parse(standing);
+          // Group has confirmed standings
+          const standings = typeof standing === 'string' ? JSON.parse(standing) : standing;
+          confirmedGroups[groupLetter] = standings;
         }
       }
 
-      // Check which r32 matches oddvar has predictions for
-      // For each position code (1A, 2B, etc.), get the actual team from group standings
-      const positionCodeMap: { [key: string]: string } = {
-        '1A': 'A', '2A': 'A', '3A': 'A',
-        '1B': 'B', '2B': 'B', '3B': 'B',
-        '1C': 'C', '2C': 'C', '3C': 'C',
-        '1D': 'D', '2D': 'D', '3D': 'D',
-        '1E': 'E', '2E': 'E', '3E': 'E',
-        '1F': 'F', '2F': 'F', '3F': 'F',
-        '1G': 'G', '2G': 'G', '3G': 'G',
-        '1H': 'H', '2H': 'H', '3H': 'H',
-      };
+      const advancementResult = await getAdvancementBonus(user.id, confirmedGroups);
+      const advancementScore = advancementResult.bonus;
 
-      // Get r32 matches to identify position codes
-      const [r32Rows] = await pool.execute(
-        'SELECT id, ko_number, home_team, away_team FROM matches WHERE stage = ? AND ko_number BETWEEN 1 AND 16',
-        ['r32'],
-      );
+      const totalScore = groupStageScore + r32Score + advancementScore + r16Score + qfScore + sfScore + finalScore + thirdPlaceScore + winnerScore;
 
-      for (const match of r32Rows as any[]) {
-        const koNum = match.ko_number;
-        if (oddvarData[`ko${koNum}`]) {
-          // Oddvar has made a prediction for this match
-          const homeTeam = match.home_team;
-          const awayTeam = match.away_team;
-          const prediction = oddvarData[`ko${koNum}`];
-
-          // Get the winning team based on prediction
-          const positionCode = prediction === 'H' ? homeTeam : awayTeam;
-          const groupLetter = positionCodeMap[positionCode];
-
-          if (groupLetter && oddvarGroupStandings[groupLetter]) {
-            const standings = oddvarGroupStandings[groupLetter];
-            const positionNum = parseInt(positionCode[0]);
-            const teamStanding = standings.find((s: any) => s.position === positionNum);
-
-            if (teamStanding) {
-              confirmedAdvances.push({ team: teamStanding.team, group: groupLetter });
-            }
+      // Check if ko_winner team is active
+      let koWinnerActive: boolean | null = null;
+      if (user.ko_winner) {
+        try {
+          const [teamRows] = await pool.execute(
+            'SELECT active FROM teams WHERE name = ?',
+            [user.ko_winner],
+          );
+          if ((teamRows as any[]).length > 0) {
+            koWinnerActive = (teamRows as any[])[0].active === 1;
           }
+        } catch (err) {
+          console.error('Error checking team active status:', err);
         }
       }
-
-      const advancementResult = await getAdvancementBonus(user.id, confirmedAdvances);
-      const advancementBonus = advancementResult.bonus;
-
-      const totalScore = groupStageScore + r32Score + r16Score + qfScore + sfScore + finalScore + thirdPlaceScore + winnerScore + advancementBonus;
 
       rankings.push({
         user_id: user.id,
@@ -281,6 +258,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
         paymentStatus: user.payment_status,
         groupStageScore,
         r32Score,
+        advancementScore,
         r16Score,
         qfScore,
         sfScore,
@@ -290,6 +268,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
         totalScore,
         maxPossibleScore: totalMaxPossibleScore,
         koWinner: user.ko_winner || null,
+        koWinnerActive,
       });
     }
 

@@ -67,6 +67,15 @@ router.get('/knockout/matches', requireAuth, async (req: AuthRequest, res: Respo
   });
 });
 
+router.get('/knockout/inactive-teams', requireAuth, async (req: AuthRequest, res: Response) => {
+  const [teams] = await pool.execute(
+    `SELECT name FROM teams WHERE active = 0`,
+  );
+  res.json({
+    inactiveTeams: (teams as Array<{ name: string }>).map((t) => t.name),
+  });
+});
+
 router.put('/knockout/third', requireAuth, async (req: AuthRequest, res: Response) => {
   const { prediction } = req.body as { prediction?: string };
 

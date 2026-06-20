@@ -124,10 +124,10 @@ async function calculateAndStoreGroupStandings(userId: string, groupName: string
       team,
     }));
 
-    // Store in database
+    // Store in database - pass object directly, pool will handle JSON serialization
     const columnName = `pred_group_${groupName.toLowerCase()}`;
     await pool.execute(`UPDATE users SET ${columnName} = ? WHERE id = ?`, [
-      JSON.stringify(result),
+      result,
       userId,
     ]);
 
@@ -149,16 +149,28 @@ async function getPredictedGroupStandingsForUser(userId: string, groupName: stri
       return calculateAndStoreGroupStandings(userId, groupName);
     }
 
-    return JSON.parse(user[columnName]);
+    // Handle both string and object returns from MySQL
+    const standing = user[columnName];
+    if (typeof standing === 'string') {
+      return JSON.parse(standing);
+    }
+    if (Array.isArray(standing)) {
+      return standing;
+    }
+    // If it's an object but not an array, it might be double-stringified - try to parse it
+    return JSON.parse(JSON.stringify(standing));
   } catch (err) {
     console.error('[GROUP] Error getting standings:', err);
     return [];
   }
 }
 
-async function getAdvancementBonus(userId: string, confirmedAdvances: { team: string; group: string }[]): Promise<{ bonus: number; details: Array<{ group: string; team: string; predicted: boolean }> }> {
+async function getAdvancementBonus(
+  userId: string,
+  confirmedGroups: { [group: string]: any[] },
+): Promise<{ bonus: number; details: Array<{ group: string; team: string; position: number; predicted: boolean }> }> {
   let bonus = 0;
-  const details: Array<{ group: string; team: string; predicted: boolean }> = [];
+  const details: Array<{ group: string; team: string; position: number; predicted: boolean }> = [];
 
   // Get user's best third selections
   const [userRows] = await pool.execute('SELECT * FROM users WHERE id = ?', [userId]);
@@ -168,27 +180,47 @@ async function getAdvancementBonus(userId: string, confirmedAdvances: { team: st
     return { bonus: 0, details: [] };
   }
 
-  // Get selected groups
-  const GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-  const selectedGroups = GROUPS.filter((g) => user[`best_third_${g.toLowerCase()}`] === 1);
+  // Get oddvar's best third selections
+  const [oddvarRows] = await pool.execute('SELECT * FROM users WHERE email = ?', ['oddvar@geheb.com']);
+  const oddvar = (oddvarRows as any[])[0];
 
-  // For each confirmed team in a selected group, check if user predicted it
-  for (const { team, group } of confirmedAdvances) {
-    if (selectedGroups.includes(group)) {
-      try {
-        const standings = await getPredictedGroupStandingsForUser(userId, group);
-        // Check if user predicted this team in top 3 (positions 1, 2, or 3)
-        const predicted = standings.find((s: any) => s.team === team && s.position <= 3);
-        if (predicted) {
-          bonus += 2;
-          details.push({ group, team, predicted: true });
-        } else {
-          details.push({ group, team, predicted: false });
+  // For each group with confirmed standings
+  for (const [group, standings] of Object.entries(confirmedGroups)) {
+    try {
+      const userStandings = await getPredictedGroupStandingsForUser(userId, group);
+
+      // Position 1 (winner) and 2 (runner-up): award if user predicted them in top 2
+      for (let pos = 1; pos <= 2; pos++) {
+        const confirmedTeam = standings.find((s: any) => s.position === pos);
+        if (confirmedTeam) {
+          const userPredicted = userStandings.find(
+            (s: any) => s.team === confirmedTeam.team && s.position <= 2,
+          );
+          if (userPredicted) {
+            bonus += 2;
+            details.push({ group, team: confirmedTeam.team, position: pos, predicted: true });
+          } else {
+            details.push({ group, team: confirmedTeam.team, position: pos, predicted: false });
+          }
         }
-      } catch (err) {
-        console.error(`[GROUP] Error checking advancement for ${team}:`, err);
-        details.push({ group, team, predicted: false });
       }
+
+      // Position 3 (best third): only award if user predicted it AND oddvar selected this group for best thirds
+      const oddvarHasGroupSelected = oddvar && oddvar[`best_third_${group.toLowerCase()}`] === 1;
+      const bestThird = standings.find((s: any) => s.position === 3);
+      if (bestThird && oddvarHasGroupSelected) {
+        const userPredicted = userStandings.find(
+          (s: any) => s.team === bestThird.team && s.position <= 3,
+        );
+        if (userPredicted) {
+          bonus += 2;
+          details.push({ group, team: bestThird.team, position: 3, predicted: true });
+        } else {
+          details.push({ group, team: bestThird.team, position: 3, predicted: false });
+        }
+      }
+    } catch (err) {
+      console.error(`[GROUP] Error checking advancement for group ${group}:`, err);
     }
   }
 

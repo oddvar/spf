@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { v4 as uuidv4 } from 'uuid';
 import { pool } from '../db.js';
 
 const router = Router();
@@ -9,11 +8,7 @@ const router = Router();
 const PAYMENT_STATUSES = ['NO', 'WANTS_TO_PAY', 'HAS_PAID'] as const;
 type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-router.post('/register', async (req: Request, res: Response) => {
+router.post('/register', async (_req: Request, res: Response) => {
   res.status(403).json({ error: 'The competition has now started and new users are no longer accepted' });
 });
 

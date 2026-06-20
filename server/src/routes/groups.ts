@@ -57,19 +57,20 @@ router.get('/groups/:groupName/check-position', requireAuth, async (req: AuthReq
   }
 });
 
-// Get advancement bonus for a list of confirmed teams
-// Only counts teams in groups selected for best thirds
+// Get advancement bonus for confirmed groups
+// Winner + runner-up: always awarded if user predicted them
+// Best third: only awarded if oddvar selected that group for best thirds
 router.post('/advancement-bonus', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const { confirmedAdvances } = req.body as { confirmedAdvances: { team: string; group: string }[] };
+    const { confirmedGroups } = req.body as { confirmedGroups: { [group: string]: any[] } };
     const userId = req.userId!;
 
-    if (!confirmedAdvances || !Array.isArray(confirmedAdvances)) {
-      res.status(400).json({ error: 'confirmedAdvances array required' });
+    if (!confirmedGroups || typeof confirmedGroups !== 'object') {
+      res.status(400).json({ error: 'confirmedGroups object required' });
       return;
     }
 
-    const result = await getAdvancementBonus(userId, confirmedAdvances);
+    const result = await getAdvancementBonus(userId, confirmedGroups);
     res.json(result);
   } catch (err) {
     console.error('Error calculating advancement bonus:', err);
