@@ -103,6 +103,7 @@ function normalizeTeamName(name: string): string {
     'BOSNIA-H': 'BOSNIA AND HERZEGOVINA',
     'BOSNIA-H.': 'BOSNIA AND HERZEGOVINA',
     'TURKIYE': 'TURKEY',
+    'CURAÇAO': 'CURACAO',
   };
 
   for (const [key, value] of Object.entries(aliases)) {
