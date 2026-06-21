@@ -42,4 +42,48 @@ router.put('/best-thirds', requireAuth, async (req: AuthRequest, res: Response) 
   res.json({ selections });
 });
 
+router.put('/best-thirds/:group/order', requireAuth, async (req: AuthRequest, res: Response) => {
+  const { group } = req.params;
+  const { order } = req.body as { order?: string[] };
+
+  if (!GROUPS.includes(group.toUpperCase() as (typeof GROUPS)[number])) {
+    res.status(400).json({ error: 'Invalid group letter' });
+    return;
+  }
+
+  if (!Array.isArray(order)) {
+    res.status(400).json({ error: 'order must be an array of team names' });
+    return;
+  }
+
+  try {
+    const columnName = `pred_group_${group.toLowerCase()}`;
+    const [rows] = await pool.execute(`SELECT ${columnName} FROM users WHERE id = ?`, [req.userId!]);
+    const user = (rows as any[])[0];
+
+    if (!user || !user[columnName]) {
+      res.status(404).json({ error: 'Group standings not found' });
+      return;
+    }
+
+    const standings = typeof user[columnName] === 'string' ? JSON.parse(user[columnName]) : user[columnName];
+
+    // Reorder standings based on the provided order while preserving positions
+    const reorderedStandings = order.map((team, index) => {
+      const original = standings.find((s: any) => s.team === team);
+      return { ...original, team };
+    });
+
+    await pool.execute(`UPDATE users SET ${columnName} = ? WHERE id = ?`, [
+      reorderedStandings,
+      req.userId!,
+    ]);
+
+    res.json({ standings: reorderedStandings });
+  } catch (err) {
+    console.error('Error updating group order:', err);
+    res.status(500).json({ error: 'Failed to update group order' });
+  }
+});
+
 export default router;

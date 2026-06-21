@@ -107,7 +107,7 @@ export default function BestThirdsPage() {
     return orderedStandings(matches, group, customOrders);
   }
 
-  function moveTeam(group: string, standings: Standing[], idx: number, dir: 'up' | 'down') {
+  async function moveTeam(group: string, standings: Standing[], idx: number, dir: 'up' | 'down') {
     const swapIdx = dir === 'up' ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= standings.length) return;
     if (standings[swapIdx].points !== standings[idx].points) return;
@@ -118,6 +118,13 @@ export default function BestThirdsPage() {
 
     localStorage.setItem(LS_KEY(group), JSON.stringify(order));
     setCustomOrders((prev) => ({ ...prev, [group]: order }));
+
+    // Save to database
+    try {
+      await put(`/best-thirds/${group}/order`, { order });
+    } catch (err) {
+      console.error('Failed to save group order:', err);
+    }
   }
 
   async function toggle(group: string) {
