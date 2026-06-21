@@ -32,9 +32,18 @@ interface RankingResponse {
 
 router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const cutoffParam = req.query.cutoff ? parseInt(req.query.cutoff as string) : null;
-    const cutoff = cutoffParam && !isNaN(cutoffParam) ? cutoffParam : null;
-    const includeKnockout = false; // "all (group stage only)" - exclude knockout stages
+    const cutoffParam = req.query.cutoff as string | undefined;
+    let cutoff: number | null = null;
+    let includeKnockout = false;
+
+    if (cutoffParam === 'all+r32' || cutoffParam === 'all r32') {
+      cutoff = null;
+      includeKnockout = true;
+    } else if (cutoffParam) {
+      const parsed = parseInt(cutoffParam);
+      cutoff = !isNaN(parsed) ? parsed : null;
+      includeKnockout = false;
+    }
 
     const limitCount = cutoff || 72;
 
@@ -47,7 +56,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
     // Get all active users except oddvar@geheb.com
     const predCols = Array.from({ length: MATCH_COUNT }, (_, i) => `match${i + 1}`).join(', ');
     const [userRows] = await pool.execute(
-      `SELECT id, first_name, last_name, payment_status, email, ko_winner, ${predCols} FROM users WHERE email != ? AND active = 1 ORDER BY first_name, last_name`,
+      `SELECT id, first_name, last_name, payment_status, email, ko_winner, ko_r32_matches, ko_r16_matches, ko_qf_matches, ko_sf_matches, ko_f_match, ko_third_match, ${predCols} FROM users WHERE email != ? AND active = 1 ORDER BY first_name, last_name`,
       ['oddvar@geheb.com'],
     );
 
@@ -221,26 +230,31 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
         }
       }
 
-      // Advancement bonus: only calculate if including knockout stages
+      // Advancement bonus: award points for correctly predicting teams that advance
       let advancementScore = 0;
       if (includeKnockout) {
-        // Winner + runner-up: award if user predicted them (regardless of best thirds selection)
-        // Best third: award if user predicted them AND oddvar selected that group for best thirds
-        const confirmedGroups: { [key: string]: any[] } = {};
+        // Parse r32 matches
+        const userKoR32 = user.ko_r32_matches ? (typeof user.ko_r32_matches === 'string' ? JSON.parse(user.ko_r32_matches) : user.ko_r32_matches) : null;
+        const oddvarKoR32 = oddvarData.ko_r32_matches ? (typeof oddvarData.ko_r32_matches === 'string' ? JSON.parse(oddvarData.ko_r32_matches) : oddvarData.ko_r32_matches) : null;
 
-        for (const groupLetter of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']) {
-          const columnName = `pred_group_${groupLetter.toLowerCase()}`;
-          const standing = oddvarData[columnName];
+        if (userKoR32 && oddvarKoR32) {
+          // Collect all teams from oddvar's r32 matches
+          const oddvarTeams = new Set<string>();
+          for (const m of oddvarKoR32 as any[]) {
+            if (m.home_team) oddvarTeams.add(m.home_team);
+            if (m.away_team) oddvarTeams.add(m.away_team);
+          }
 
-          if (standing) {
-            // Group has confirmed standings
-            const standings = typeof standing === 'string' ? JSON.parse(standing) : standing;
-            confirmedGroups[groupLetter] = standings;
+          // Award 2 points for each user team that appears in oddvar's teams
+          for (const m of userKoR32 as any[]) {
+            if (m.home_team && oddvarTeams.has(m.home_team)) {
+              advancementScore += 2;
+            }
+            if (m.away_team && oddvarTeams.has(m.away_team)) {
+              advancementScore += 2;
+            }
           }
         }
-
-        const advancementResult = await getAdvancementBonus(user.id, confirmedGroups);
-        advancementScore = advancementResult.bonus;
       }
 
       const totalScore = groupStageScore + r32Score + advancementScore + r16Score + qfScore + sfScore + finalScore + thirdPlaceScore + winnerScore;

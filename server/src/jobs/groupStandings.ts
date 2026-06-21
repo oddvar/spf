@@ -184,39 +184,57 @@ async function getAdvancementBonus(
   const [oddvarRows] = await pool.execute('SELECT * FROM users WHERE email = ?', ['oddvar@geheb.com']);
   const oddvar = (oddvarRows as any[])[0];
 
+  // Get all r32 matches to check which teams actually participate
+  const [r32Matches] = await pool.execute('SELECT home_team, away_team FROM matches WHERE stage = ?', ['r32']);
+  const r32TeamSlots = new Set<string>();
+  for (const match of r32Matches as any[]) {
+    r32TeamSlots.add(match.home_team);
+    r32TeamSlots.add(match.away_team);
+  }
+
   // For each group with confirmed standings
   for (const [group, standings] of Object.entries(confirmedGroups)) {
     try {
       const userStandings = await getPredictedGroupStandingsForUser(userId, group);
 
-      // Position 1 (winner) and 2 (runner-up): award if user predicted them in top 2
+      // Position 1 (winner) and 2 (runner-up): award if user predicted them in top 2 AND they appear in r32
       for (let pos = 1; pos <= 2; pos++) {
         const confirmedTeam = standings.find((s: any) => s.position === pos);
         if (confirmedTeam) {
-          const userPredicted = userStandings.find(
-            (s: any) => s.team === confirmedTeam.team && s.position <= 2,
-          );
-          if (userPredicted) {
-            bonus += 2;
-            details.push({ group, team: confirmedTeam.team, position: pos, predicted: true });
-          } else {
-            details.push({ group, team: confirmedTeam.team, position: pos, predicted: false });
+          // Determine the slot code for this team (e.g., "1A" for group A winner)
+          const slotCode = pos === 1 ? `1${group}` : `2${group}`;
+          const teamIsInR32 = r32TeamSlots.has(slotCode);
+
+          if (teamIsInR32) {
+            const userPredicted = userStandings.find(
+              (s: any) => s.team === confirmedTeam.team && s.position <= 2,
+            );
+            if (userPredicted) {
+              bonus += 2;
+              details.push({ group, team: confirmedTeam.team, position: pos, predicted: true });
+            } else {
+              details.push({ group, team: confirmedTeam.team, position: pos, predicted: false });
+            }
           }
         }
       }
 
-      // Position 3 (best third): only award if user predicted it AND oddvar selected this group for best thirds
+      // Position 3 (best third): award if user predicted it as position 3 AND oddvar selected this group for best thirds
+      const userHasGroupSelected = user && user[`best_third_${group.toLowerCase()}`] === 1;
       const oddvarHasGroupSelected = oddvar && oddvar[`best_third_${group.toLowerCase()}`] === 1;
-      const bestThird = standings.find((s: any) => s.position === 3);
-      if (bestThird && oddvarHasGroupSelected) {
-        const userPredicted = userStandings.find(
-          (s: any) => s.team === bestThird.team && s.position <= 3,
+
+      // Find user's predicted 3rd place team
+      const userBestThird = userStandings.find((s: any) => s.position === 3);
+
+      if (userBestThird && userHasGroupSelected && oddvarHasGroupSelected) {
+        // Check if user's 3rd place prediction matches any of oddvar's top 3
+        const matchedConfirmedTeam = standings.find(
+          (s: any) => s.team === userBestThird.team && s.position <= 3,
         );
-        if (userPredicted) {
+
+        if (matchedConfirmedTeam) {
           bonus += 2;
-          details.push({ group, team: bestThird.team, position: 3, predicted: true });
-        } else {
-          details.push({ group, team: bestThird.team, position: 3, predicted: false });
+          details.push({ group, team: userBestThird.team, position: 3, predicted: true });
         }
       }
     } catch (err) {
