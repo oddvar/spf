@@ -80,11 +80,13 @@ export default function RankingPage() {
           onChange={(e) => {
             const val = e.target.value;
             if (val === '') setCutoffMatchNumber(null);
+            else if (val === 'all+r32') setCutoffMatchNumber('all+r32');
             else setCutoffMatchNumber(parseInt(val));
           }}
           style={{ padding: '0.5rem', fontSize: '1rem' }}
         >
           <option value="">all (group stage only)</option>
+          <option value="all+r32">all + round of 32</option>
           {Array.from({ length: maxMatchesWithResults }, (_, i) => i + 1).map((matchNum) => (
             <option key={matchNum} value={matchNum}>
               {matchNum}
