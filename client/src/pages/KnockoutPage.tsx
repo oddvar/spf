@@ -86,6 +86,14 @@ export default function KnockoutPage() {
   const [inactiveTeams, setInactiveTeams] = useState<Set<string>>(new Set());
   const [oddvarR32Teams, setOddvarR32Teams] = useState<Set<string>>(new Set());
   const [oddvarR32MatchMap, setOddvarR32MatchMap] = useState<Map<string, number>>(new Map());
+  const [oddvarR16Teams, setOddvarR16Teams] = useState<Set<string>>(new Set());
+  const [oddvarR16MatchMap, setOddvarR16MatchMap] = useState<Map<string, number>>(new Map());
+  const [oddvarQFTeams, setOddvarQFTeams] = useState<Set<string>>(new Set());
+  const [oddvarQFMatchMap, setOddvarQFMatchMap] = useState<Map<string, number>>(new Map());
+  const [oddvarSFTeams, setOddvarSFTeams] = useState<Set<string>>(new Set());
+  const [oddvarSFMatchMap, setOddvarSFMatchMap] = useState<Map<string, number>>(new Map());
+  const [oddvarFTeams, setOddvarFTeams] = useState<Set<string>>(new Set());
+  const [oddvarFMatchMap, setOddvarFMatchMap] = useState<Map<string, number>>(new Map());
 
   const updateSelectedUserId = (userId: string) => {
     setSelectedUserId(userId);
@@ -139,21 +147,39 @@ export default function KnockoutPage() {
           setKoMatches(ko.r32Predictions);
           setInactiveTeams(new Set(inactiveRes.inactiveTeams));
 
-          // Extract oddvar's r32 teams and track which match they're in
-          const oddvarTeams = new Set<string>();
-          const oddvarMatchMap = new Map<string, number>();
-          for (const m of oddvarKo.r32Predictions || []) {
-            if (m.home_team) {
-              oddvarTeams.add(m.home_team);
-              oddvarMatchMap.set(m.home_team, m.match_number);
+          // Extract oddvar's teams for all stages and track which match they're in
+          const extractTeamsFromStage = (predictions: any[]) => {
+            const teams = new Set<string>();
+            const matchMap = new Map<string, number>();
+            for (const m of predictions || []) {
+              if (m.home_team) {
+                teams.add(m.home_team);
+                matchMap.set(m.home_team, m.match_number);
+              }
+              if (m.away_team) {
+                teams.add(m.away_team);
+                matchMap.set(m.away_team, m.match_number);
+              }
             }
-            if (m.away_team) {
-              oddvarTeams.add(m.away_team);
-              oddvarMatchMap.set(m.away_team, m.match_number);
-            }
-          }
-          setOddvarR32Teams(oddvarTeams);
-          setOddvarR32MatchMap(oddvarMatchMap);
+            return { teams, matchMap };
+          };
+
+          const r32 = extractTeamsFromStage(oddvarKo.r32Predictions);
+          const r16 = extractTeamsFromStage(oddvarKo.r16Predictions);
+          const qf = extractTeamsFromStage(oddvarKo.qfPredictions);
+          const sf = extractTeamsFromStage(oddvarKo.sfPredictions);
+          const f = extractTeamsFromStage([oddvarKo.fPrediction].filter(Boolean));
+
+          setOddvarR32Teams(r32.teams);
+          setOddvarR32MatchMap(r32.matchMap);
+          setOddvarR16Teams(r16.teams);
+          setOddvarR16MatchMap(r16.matchMap);
+          setOddvarQFTeams(qf.teams);
+          setOddvarQFMatchMap(qf.matchMap);
+          setOddvarSFTeams(sf.teams);
+          setOddvarSFMatchMap(sf.matchMap);
+          setOddvarFTeams(f.teams);
+          setOddvarFMatchMap(f.matchMap);
 
           setR16Preds(ko.r16Predictions);
           setQfPreds(ko.qfPredictions);
@@ -181,21 +207,39 @@ export default function KnockoutPage() {
           setKoMatches(ko.r32Predictions);
           setInactiveTeams(new Set(inactiveRes.inactiveTeams));
 
-          // Extract oddvar's r32 teams and track which match they're in
-          const oddvarTeams = new Set<string>();
-          const oddvarMatchMap = new Map<string, number>();
-          for (const m of oddvarKo.r32Predictions || []) {
-            if (m.home_team) {
-              oddvarTeams.add(m.home_team);
-              oddvarMatchMap.set(m.home_team, m.match_number);
+          // Extract oddvar's teams for all stages and track which match they're in
+          const extractTeamsFromStage = (predictions: any[]) => {
+            const teams = new Set<string>();
+            const matchMap = new Map<string, number>();
+            for (const m of predictions || []) {
+              if (m.home_team) {
+                teams.add(m.home_team);
+                matchMap.set(m.home_team, m.match_number);
+              }
+              if (m.away_team) {
+                teams.add(m.away_team);
+                matchMap.set(m.away_team, m.match_number);
+              }
             }
-            if (m.away_team) {
-              oddvarTeams.add(m.away_team);
-              oddvarMatchMap.set(m.away_team, m.match_number);
-            }
-          }
-          setOddvarR32Teams(oddvarTeams);
-          setOddvarR32MatchMap(oddvarMatchMap);
+            return { teams, matchMap };
+          };
+
+          const r32 = extractTeamsFromStage(oddvarKo.r32Predictions);
+          const r16 = extractTeamsFromStage(oddvarKo.r16Predictions);
+          const qf = extractTeamsFromStage(oddvarKo.qfPredictions);
+          const sf = extractTeamsFromStage(oddvarKo.sfPredictions);
+          const f = extractTeamsFromStage([oddvarKo.fPrediction].filter(Boolean));
+
+          setOddvarR32Teams(r32.teams);
+          setOddvarR32MatchMap(r32.matchMap);
+          setOddvarR16Teams(r16.teams);
+          setOddvarR16MatchMap(r16.matchMap);
+          setOddvarQFTeams(qf.teams);
+          setOddvarQFMatchMap(qf.matchMap);
+          setOddvarSFTeams(sf.teams);
+          setOddvarSFMatchMap(sf.matchMap);
+          setOddvarFTeams(f.teams);
+          setOddvarFMatchMap(f.matchMap);
 
           setR16Preds(ko.r16Predictions);
           setQfPreds(ko.qfPredictions);
@@ -679,9 +723,26 @@ export default function KnockoutPage() {
                     onClick={homeClick}
                   >
                     <span className="bracket-team-name" style={{
-                      textDecoration: (inactiveTeams.has(home) && !oddvarR32Teams.has(home)) ? 'line-through' : 'none',
-                      fontWeight: oddvarR32Teams.has(home) ? 'bold' : 'normal',
-                      fontStyle: (round === 0 && oddvarR32Teams.has(home) && oddvarR32MatchMap.get(home) !== koMatch?.ko_number) ? 'italic' : 'normal',
+                      textDecoration: (() => {
+                        const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
+                        const isInOddvar = teamSets[round]?.has(home);
+                        return (inactiveTeams.has(home) && !isInOddvar) ? 'line-through' : 'none';
+                      })(),
+                      fontWeight: (() => {
+                        const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
+                        return teamSets[round]?.has(home) ? 'bold' : 'normal';
+                      })(),
+                      fontStyle: (() => {
+                        const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
+                        const matchMaps = [oddvarR32MatchMap, oddvarR16MatchMap, oddvarQFMatchMap, oddvarSFMatchMap, oddvarFMatchMap];
+                        const isInOddvar = teamSets[round]?.has(home);
+                        const isWrongMatch = isInOddvar && matchMaps[round]?.get(home) !== koMatch?.ko_number;
+                        return isWrongMatch ? 'italic' : 'normal';
+                      })(),
+                      fontSize: (() => {
+                        const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
+                        return teamSets[round]?.has(home) ? '1.1em' : '1em';
+                      })(),
                     }}>{home}</span>
                     {pred === 'H' && <span className="bracket-check">✓</span>}
                   </div>
@@ -690,9 +751,26 @@ export default function KnockoutPage() {
                     onClick={awayClick}
                   >
                     <span className="bracket-team-name" style={{
-                      textDecoration: (inactiveTeams.has(away) && !oddvarR32Teams.has(away)) ? 'line-through' : 'none',
-                      fontWeight: oddvarR32Teams.has(away) ? 'bold' : 'normal',
-                      fontStyle: (round === 0 && oddvarR32Teams.has(away) && oddvarR32MatchMap.get(away) !== koMatch?.ko_number) ? 'italic' : 'normal',
+                      textDecoration: (() => {
+                        const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
+                        const isInOddvar = teamSets[round]?.has(away);
+                        return (inactiveTeams.has(away) && !isInOddvar) ? 'line-through' : 'none';
+                      })(),
+                      fontWeight: (() => {
+                        const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
+                        return teamSets[round]?.has(away) ? 'bold' : 'normal';
+                      })(),
+                      fontStyle: (() => {
+                        const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
+                        const matchMaps = [oddvarR32MatchMap, oddvarR16MatchMap, oddvarQFMatchMap, oddvarSFMatchMap, oddvarFMatchMap];
+                        const isInOddvar = teamSets[round]?.has(away);
+                        const isWrongMatch = isInOddvar && matchMaps[round]?.get(away) !== koMatch?.ko_number;
+                        return isWrongMatch ? 'italic' : 'normal';
+                      })(),
+                      fontSize: (() => {
+                        const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
+                        return teamSets[round]?.has(away) ? '1.1em' : '1em';
+                      })(),
                     }}>{away}</span>
                     {pred === 'A' && <span className="bracket-check">✓</span>}
                   </div>
@@ -745,6 +823,8 @@ export default function KnockoutPage() {
                   <span className="bracket-team-name" style={{
                     textDecoration: (inactiveTeams.has(home) && !oddvarR32Teams.has(home)) ? 'line-through' : 'none',
                     fontWeight: oddvarR32Teams.has(home) ? 'bold' : 'normal',
+                    fontStyle: oddvarR32Teams.has(home) && oddvarR32MatchMap.get(home) !== 32 ? 'italic' : 'normal',
+                    fontSize: oddvarR32Teams.has(home) ? '1.1em' : '1em',
                   }}>{home}</span>
                   {thirdPred === 'H' && <span className="bracket-check">✓</span>}
                 </div>
@@ -755,6 +835,8 @@ export default function KnockoutPage() {
                   <span className="bracket-team-name" style={{
                     textDecoration: (inactiveTeams.has(away) && !oddvarR32Teams.has(away)) ? 'line-through' : 'none',
                     fontWeight: oddvarR32Teams.has(away) ? 'bold' : 'normal',
+                    fontStyle: oddvarR32Teams.has(away) && oddvarR32MatchMap.get(away) !== 32 ? 'italic' : 'normal',
+                    fontSize: oddvarR32Teams.has(away) ? '1.1em' : '1em',
                   }}>{away}</span>
                   {thirdPred === 'A' && <span className="bracket-check">✓</span>}
                 </div>
