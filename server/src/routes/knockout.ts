@@ -261,4 +261,28 @@ router.post('/knockout/save-rendered', requireAuth, async (req: AuthRequest, res
   }
 });
 
+router.get('/knockout/oddvar-r32', async (_req, res: Response) => {
+  try {
+    const [userRows] = await pool.execute(
+      'SELECT ko_r32_matches FROM users WHERE email = ?',
+      ['oddvar@geheb.com'],
+    );
+
+    const user = (userRows as any[])[0];
+    if (!user) {
+      res.status(404).json({ error: 'Oddvar user not found' });
+      return;
+    }
+
+    const r32Matches = user.ko_r32_matches
+      ? (typeof user.ko_r32_matches === 'string' ? JSON.parse(user.ko_r32_matches) : user.ko_r32_matches)
+      : [];
+
+    res.json({ r32Predictions: r32Matches });
+  } catch (err) {
+    console.error('Error fetching oddvar r32 matches:', err);
+    res.status(500).json({ error: 'Failed to fetch oddvar r32 matches' });
+  }
+});
+
 export default router;

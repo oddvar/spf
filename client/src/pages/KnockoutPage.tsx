@@ -84,6 +84,8 @@ export default function KnockoutPage() {
     () => localStorage.getItem('selectedUserId') ?? '',
   );
   const [inactiveTeams, setInactiveTeams] = useState<Set<string>>(new Set());
+  const [oddvarR32Teams, setOddvarR32Teams] = useState<Set<string>>(new Set());
+  const [oddvarR32MatchMap, setOddvarR32MatchMap] = useState<Map<string, number>>(new Map());
 
   const updateSelectedUserId = (userId: string) => {
     setSelectedUserId(userId);
@@ -128,13 +130,31 @@ export default function KnockoutPage() {
       if (selectedUserId) {
         // Fetch selected user's knockout predictions
         try {
-          const [ko, thirds, inactiveRes] = await Promise.all([
+          const [ko, thirds, inactiveRes, oddvarKo] = await Promise.all([
             get<any>(`/users/${selectedUserId}/knockout`),
             get<{ selections: string[]; matches: GroupMatchFull[] }>(`/users/${selectedUserId}/best-thirds`),
             get<{ inactiveTeams: string[] }>('/knockout/inactive-teams'),
+            get<any>('/knockout/oddvar-r32').catch(() => ({ r32Predictions: [] })),
           ]);
           setKoMatches(ko.r32Predictions);
           setInactiveTeams(new Set(inactiveRes.inactiveTeams));
+
+          // Extract oddvar's r32 teams and track which match they're in
+          const oddvarTeams = new Set<string>();
+          const oddvarMatchMap = new Map<string, number>();
+          for (const m of oddvarKo.r32Predictions || []) {
+            if (m.home_team) {
+              oddvarTeams.add(m.home_team);
+              oddvarMatchMap.set(m.home_team, m.match_number);
+            }
+            if (m.away_team) {
+              oddvarTeams.add(m.away_team);
+              oddvarMatchMap.set(m.away_team, m.match_number);
+            }
+          }
+          setOddvarR32Teams(oddvarTeams);
+          setOddvarR32MatchMap(oddvarMatchMap);
+
           setR16Preds(ko.r16Predictions);
           setQfPreds(ko.qfPredictions);
           setSfPreds(ko.sfPredictions);
@@ -151,14 +171,32 @@ export default function KnockoutPage() {
       } else {
         // Fetch own knockout predictions
         try {
-          const [ko, group, thirds, inactiveRes] = await Promise.all([
+          const [ko, group, thirds, inactiveRes, oddvarKo] = await Promise.all([
             get<{ r32Predictions: KoMatch[]; canEdit: boolean; r16Predictions: (string | null)[]; qfPredictions: (string | null)[]; sfPredictions: (string | null)[]; fPredictions: (string | null)[]; thirdPrediction: string | null }>('/knockout/matches'),
             get<{ matches: GroupMatchFull[]; canEdit: boolean }>('/matches'),
             get<{ selections: string[] }>('/best-thirds'),
             get<{ inactiveTeams: string[] }>('/knockout/inactive-teams'),
+            get<any>('/knockout/oddvar-r32').catch(() => ({ r32Predictions: [] })),
           ]);
           setKoMatches(ko.r32Predictions);
           setInactiveTeams(new Set(inactiveRes.inactiveTeams));
+
+          // Extract oddvar's r32 teams and track which match they're in
+          const oddvarTeams = new Set<string>();
+          const oddvarMatchMap = new Map<string, number>();
+          for (const m of oddvarKo.r32Predictions || []) {
+            if (m.home_team) {
+              oddvarTeams.add(m.home_team);
+              oddvarMatchMap.set(m.home_team, m.match_number);
+            }
+            if (m.away_team) {
+              oddvarTeams.add(m.away_team);
+              oddvarMatchMap.set(m.away_team, m.match_number);
+            }
+          }
+          setOddvarR32Teams(oddvarTeams);
+          setOddvarR32MatchMap(oddvarMatchMap);
+
           setR16Preds(ko.r16Predictions);
           setQfPreds(ko.qfPredictions);
           setSfPreds(ko.sfPredictions);
@@ -640,14 +678,22 @@ export default function KnockoutPage() {
                     className={`bracket-team${pred === 'H' ? ' bracket-team--winner' : ''}${homeClick ? ' bracket-team--clickable' : ''}`}
                     onClick={homeClick}
                   >
-                    <span className="bracket-team-name" style={{ textDecoration: inactiveTeams.has(home) ? 'line-through' : 'none' }}>{home}</span>
+                    <span className="bracket-team-name" style={{
+                      textDecoration: (inactiveTeams.has(home) && !oddvarR32Teams.has(home)) ? 'line-through' : 'none',
+                      fontWeight: oddvarR32Teams.has(home) ? 'bold' : 'normal',
+                      fontStyle: (round === 0 && oddvarR32Teams.has(home) && oddvarR32MatchMap.get(home) !== koMatch?.ko_number) ? 'italic' : 'normal',
+                    }}>{home}</span>
                     {pred === 'H' && <span className="bracket-check">✓</span>}
                   </div>
                   <div
                     className={`bracket-team${pred === 'A' ? ' bracket-team--winner' : ''}${awayClick ? ' bracket-team--clickable' : ''}`}
                     onClick={awayClick}
                   >
-                    <span className="bracket-team-name" style={{ textDecoration: inactiveTeams.has(away) ? 'line-through' : 'none' }}>{away}</span>
+                    <span className="bracket-team-name" style={{
+                      textDecoration: (inactiveTeams.has(away) && !oddvarR32Teams.has(away)) ? 'line-through' : 'none',
+                      fontWeight: oddvarR32Teams.has(away) ? 'bold' : 'normal',
+                      fontStyle: (round === 0 && oddvarR32Teams.has(away) && oddvarR32MatchMap.get(away) !== koMatch?.ko_number) ? 'italic' : 'normal',
+                    }}>{away}</span>
                     {pred === 'A' && <span className="bracket-check">✓</span>}
                   </div>
                 </div>
@@ -696,20 +742,38 @@ export default function KnockoutPage() {
                   className={`bracket-team${thirdPred === 'H' ? ' bracket-team--winner' : ''}${tpEnabled ? ' bracket-team--clickable' : ''}`}
                   onClick={tpEnabled ? () => predictThird('H') : undefined}
                 >
-                  <span className="bracket-team-name" style={{ textDecoration: inactiveTeams.has(home) ? 'line-through' : 'none' }}>{home}</span>
+                  <span className="bracket-team-name" style={{
+                    textDecoration: (inactiveTeams.has(home) && !oddvarR32Teams.has(home)) ? 'line-through' : 'none',
+                    fontWeight: oddvarR32Teams.has(home) ? 'bold' : 'normal',
+                  }}>{home}</span>
                   {thirdPred === 'H' && <span className="bracket-check">✓</span>}
                 </div>
                 <div
                   className={`bracket-team${thirdPred === 'A' ? ' bracket-team--winner' : ''}${tpEnabled ? ' bracket-team--clickable' : ''}`}
                   onClick={tpEnabled ? () => predictThird('A') : undefined}
                 >
-                  <span className="bracket-team-name" style={{ textDecoration: inactiveTeams.has(away) ? 'line-through' : 'none' }}>{away}</span>
+                  <span className="bracket-team-name" style={{
+                    textDecoration: (inactiveTeams.has(away) && !oddvarR32Teams.has(away)) ? 'line-through' : 'none',
+                    fontWeight: oddvarR32Teams.has(away) ? 'bold' : 'normal',
+                  }}>{away}</span>
                   {thirdPred === 'A' && <span className="bracket-check">✓</span>}
                 </div>
               </div>
             );
           })()}
 
+        </div>
+
+        <div style={{ marginTop: '2rem', padding: '1rem', borderTop: '1px solid var(--border)', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+          <p style={{ margin: '0.5rem 0' }}>
+            <span style={{ fontWeight: 'bold' }}>Bold</span> teams are correct and in the correct position.
+          </p>
+          <p style={{ margin: '0.5rem 0' }}>
+            <span style={{ fontWeight: 'bold', fontStyle: 'italic' }}>Bold italic</span> teams are correct but in an incorrect position.
+          </p>
+          <p style={{ margin: '0.5rem 0' }}>
+            Both yield points.
+          </p>
         </div>
       </div>
     </div>
