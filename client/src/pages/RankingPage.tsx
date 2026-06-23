@@ -26,7 +26,7 @@ export default function RankingPage() {
   const [maxMatchesWithResults, setMaxMatchesWithResults] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [cutoffMatchNumber, setCutoffMatchNumber] = useState<number | null | string>(null);
+  const [cutoffMatchNumber, setCutoffMatchNumber] = useState<number | null | string>('all+r32');
 
   useEffect(() => {
     // Log event when page loads
@@ -39,15 +39,13 @@ export default function RankingPage() {
   }, []);
 
   useEffect(() => {
-    // Log event when cutoff selection changes (but not on initial mount)
-    if (cutoffMatchNumber !== null) {
-      post('/events/log', {
-        event_type: 'ranking_cutoff_changed',
-        description: `User selected ranking cutoff: ${cutoffMatchNumber} matches`,
-      }).catch(() => {
-        // Silently fail if event logging fails
-      });
-    }
+    // Log event when cutoff selection changes (skip logging on initial mount)
+    post('/events/log', {
+      event_type: 'ranking_cutoff_changed',
+      description: `User selected ranking cutoff: ${cutoffMatchNumber}`,
+    }).catch(() => {
+      // Silently fail if event logging fails
+    });
   }, [cutoffMatchNumber]);
 
   useEffect(() => {
