@@ -27,6 +27,8 @@ export default function RankingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [cutoffMatchNumber, setCutoffMatchNumber] = useState<number | null | string>('all+r32');
+  const [oddvarR32TeamCount, setOddvarR32TeamCount] = useState(0);
+  const [groupStageMaxPoints, setGroupStageMaxPoints] = useState(0);
 
   useEffect(() => {
     // Log event when page loads
@@ -36,6 +38,22 @@ export default function RankingPage() {
     }).catch(() => {
       // Silently fail if event logging fails
     });
+
+    // Fetch oddvar's r32 teams to calculate max advancement points
+    get<any>('/knockout/oddvar-r32')
+      .then((data) => {
+        if (data.r32Predictions) {
+          const teams = new Set<string>();
+          for (const m of data.r32Predictions) {
+            if (m.home_team) teams.add(m.home_team);
+            if (m.away_team) teams.add(m.away_team);
+          }
+          setOddvarR32TeamCount(teams.size);
+        }
+      })
+      .catch(() => {
+        // Silently fail
+      });
   }, []);
 
   useEffect(() => {
@@ -54,19 +72,45 @@ export default function RankingPage() {
       url = `/ranking?cutoff=${encodeURIComponent(cutoffMatchNumber)}`;
     }
     setLoading(true);
-    get<{ rankings: UserRanking[]; maxMatchesWithResults: number }>(url)
-      .then((data) => {
+
+    // When showing "all + r32", also fetch group-only to get group stage max
+    const fetchData = async () => {
+      try {
+        const data = await get<{ rankings: UserRanking[]; maxMatchesWithResults: number }>(url);
         setRankings(data.rankings);
         setMaxMatchesWithResults(data.maxMatchesWithResults);
-      })
-      .catch((err) => {
+
+        // If showing "all + r32", fetch group-only ranking to get the group stage max
+        if (cutoffMatchNumber === 'all+r32') {
+          const groupData = await get<{ rankings: UserRanking[] }>('/ranking');
+          if (groupData.rankings.length > 0) {
+            setGroupStageMaxPoints(groupData.rankings[0].maxPossibleScore);
+          }
+        } else {
+          setGroupStageMaxPoints(data.rankings.length > 0 ? data.rankings[0].maxPossibleScore : 0);
+        }
+      } catch (err) {
         console.error('Failed to fetch rankings:', err);
         setError('Failed to load rankings');
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, [cutoffMatchNumber]);
 
   const maxPossibleScore = rankings.length > 0 ? rankings[0].maxPossibleScore : 0;
+
+  const getMaxPointsDisplay = () => {
+    if (cutoffMatchNumber === 'all+r32' && rankings.length > 0 && groupStageMaxPoints > 0) {
+      // Display group stage max + r32 advancement max
+      const r32AdvancementMax = oddvarR32TeamCount * 2;
+      const total = groupStageMaxPoints + r32AdvancementMax;
+      return `${groupStageMaxPoints}+${r32AdvancementMax}=${total}`;
+    }
+    return maxPossibleScore.toString();
+  };
 
   return (
     <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
@@ -94,7 +138,7 @@ export default function RankingPage() {
         <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>matches</span>
       </div>
       <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-        Current max points: {maxPossibleScore}
+        Current max points: {getMaxPointsDisplay()}
       </p>
 
       {error && <div style={{ color: '#cc0000', marginBottom: '1rem' }}>{error}</div>}
