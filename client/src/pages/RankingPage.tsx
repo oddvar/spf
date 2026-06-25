@@ -127,8 +127,8 @@ export default function RankingPage() {
           }}
           style={{ padding: '0.5rem', fontSize: '1rem' }}
         >
-          <option value="">all (group stage only)</option>
-          <option value="all+r32">all + round of 32</option>
+          <option value="">only group</option>
+          <option value="all+r32">r32 points and all group</option>
           {Array.from({ length: maxMatchesWithResults }, (_, i) => i + 1).map((matchNum) => (
             <option key={matchNum} value={matchNum}>
               {matchNum}
