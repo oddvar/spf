@@ -126,7 +126,15 @@ export default function KnockoutPage() {
         const otherUsers = usersList
           .filter((u) => u.id !== loggedInUserId)
           .sort((a, b) => a.last_name.localeCompare(b.last_name));
-        setUsers([loggedInUser, ...otherUsers]);
+
+        // Add oddvar as a special reference user
+        const oddvarUser: User = {
+          id: 'oddvar@geheb.com',
+          first_name: 'Correct',
+          last_name: 'results',
+        };
+
+        setUsers([loggedInUser, ...otherUsers, oddvarUser]);
       })
       .catch(() => {
         console.error('Failed to fetch users');

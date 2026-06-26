@@ -130,7 +130,15 @@ export default function PredictionsPage() {
         const otherUsers = usersList
           .filter((u) => u.id !== loggedInUserId)
           .sort((a, b) => a.last_name.localeCompare(b.last_name));
-        setUsers([loggedInUser, ...otherUsers]);
+
+        // Add oddvar as a special reference user
+        const oddvarUser: User = {
+          id: 'oddvar@geheb.com',
+          first_name: 'Correct',
+          last_name: 'results',
+        };
+
+        setUsers([loggedInUser, ...otherUsers, oddvarUser]);
       })
       .catch(() => {
         console.error('Failed to fetch users');
@@ -226,10 +234,11 @@ export default function PredictionsPage() {
         const predicted = matches.filter((m) => m.prediction !== null).length;
         const total = matches.length;
         const allDone = predicted === total;
+        const canNavigate = allDone || !!selectedUserId;
         return (
           <div className="predictions-progress">
             <span className="predictions-count">{predicted} / {total} predicted</span>
-            <button className="btn-primary" disabled={!allDone} onClick={() => navigate('/best-thirds')}>
+            <button className="btn-primary" disabled={!canNavigate} onClick={() => navigate('/best-thirds')}>
               Next
             </button>
           </div>

@@ -63,7 +63,15 @@ export default function BestThirdsPage() {
           last_name: localStorage.getItem('lastName') || '',
         };
         const otherUsers = usersList.filter((u) => u.id !== loggedInUserId);
-        setUsers([loggedInUser, ...otherUsers]);
+
+        // Add oddvar as a special reference user
+        const oddvarUser: User = {
+          id: 'oddvar@geheb.com',
+          first_name: 'Correct',
+          last_name: 'results',
+        };
+
+        setUsers([loggedInUser, ...otherUsers, oddvarUser]);
       })
       .catch(() => {
         console.error('Failed to fetch users');
@@ -151,6 +159,7 @@ export default function BestThirdsPage() {
 
   const count = selections.size;
   const allDone = count === REQUIRED;
+  const canNavigate = allDone || !!selectedUserId;
 
   // Determine which groups' 3rd-place teams are eligible (top 8 by points)
   const thirdPoints = new Map(GROUPS.map((g) => [g, getStandings(g)[2]?.points ?? 0]));
@@ -197,7 +206,7 @@ export default function BestThirdsPage() {
           <button className="btn-secondary" onClick={() => navigate('/predictions')}>
             Previous
           </button>
-          <button className="btn-primary" disabled={!allDone} onClick={() => navigate('/knockout')}>
+          <button className="btn-primary" disabled={!canNavigate} onClick={() => navigate('/knockout')}>
             Next
           </button>
         </div>
