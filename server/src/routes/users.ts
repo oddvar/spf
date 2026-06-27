@@ -82,6 +82,31 @@ router.get('/users/:userId/best-thirds', requireAuth, async (req: AuthRequest, r
       [userIdentifier],
     );
 
+    // Fetch pred_group_X columns separately if user has them
+    let customOrders: Record<string, string[]> = {};
+    try {
+      const GROUPS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'];
+      const predGroupCols = GROUPS.map((g) => `pred_group_${g}`).join(', ');
+      const [predGroupRows] = await pool.execute(
+        `SELECT ${predGroupCols} FROM users WHERE ${isEmail ? 'email' : 'id'} = ?`,
+        [userIdentifier],
+      );
+      if ((predGroupRows as any[]).length > 0) {
+        const predGroupData = (predGroupRows as any[])[0];
+        for (const group of GROUPS) {
+          const predGroup = predGroupData[`pred_group_${group}`];
+          if (predGroup) {
+            const standings = typeof predGroup === 'string' ? JSON.parse(predGroup) : predGroup;
+            // Sort by position to maintain correct order
+            const sorted = standings.sort((a: any, b: any) => a.position - b.position);
+            customOrders[group.toUpperCase()] = sorted.map((s: any) => s.team);
+          }
+        }
+      }
+    } catch {
+      // pred_group columns may not exist, silently continue
+    }
+
     if ((userRows as any[]).length === 0) {
       res.status(404).json({ error: 'User not found' });
       return;
@@ -104,6 +129,7 @@ router.get('/users/:userId/best-thirds', requireAuth, async (req: AuthRequest, r
         ...normalise(m),
         prediction: preds[`match${m.match_number}`] ?? null,
       })),
+      customOrders: Object.keys(customOrders).length > 0 ? customOrders : undefined,
     });
   } catch (err) {
     console.error('Error fetching user best-thirds:', err);
@@ -121,7 +147,7 @@ router.get('/users/:userId/knockout', requireAuth, async (req: AuthRequest, res:
     // Support fetching by email (oddvar@geheb.com) or by user ID
     const isEmail = userIdentifier.includes('@');
     const [userRows] = await pool.execute(
-      `SELECT ko1, ko2, ko3, ko4, ko5, ko6, ko7, ko8, ko9, ko10, ko11, ko12, ko13, ko14, ko15, ko16, ko17, ko18, ko19, ko20, ko21, ko22, ko23, ko24, ko25, ko26, ko27, ko28, ko29, ko30, ko31, ko32 FROM users WHERE ${isEmail ? 'email' : 'id'} = ?`,
+      `SELECT ko1, ko2, ko3, ko4, ko5, ko6, ko7, ko8, ko9, ko10, ko11, ko12, ko13, ko14, ko15, ko16, ko17, ko18, ko19, ko20, ko21, ko22, ko23, ko24, ko25, ko26, ko27, ko28, ko29, ko30, ko31, ko32, ko_r32_matches FROM users WHERE ${isEmail ? 'email' : 'id'} = ?`,
       [userIdentifier],
     );
 
@@ -147,13 +173,15 @@ router.get('/users/:userId/knockout', requireAuth, async (req: AuthRequest, res:
       teamActiveMap[team.name] = team.active === 1;
     }
 
+    const r32Predictions = (matchRows as any[]).map((m) => ({
+      ...normalise(m),
+      prediction: userData[`ko${m.ko_number}`] ?? null,
+      homeTeamActive: teamActiveMap[m.home_team] !== false,
+      awayTeamActive: teamActiveMap[m.away_team] !== false,
+    }));
+
     res.json({
-      r32Predictions: (matchRows as any[]).map((m) => ({
-        ...normalise(m),
-        prediction: userData[`ko${m.ko_number}`] ?? null,
-        homeTeamActive: teamActiveMap[m.home_team] !== false,
-        awayTeamActive: teamActiveMap[m.away_team] !== false,
-      })),
+      r32Predictions,
       r16Predictions: Array.from({ length: 8 }, (_, i) => userData[`ko${17 + i}`] ?? null),
       qfPredictions: Array.from({ length: 4 }, (_, i) => userData[`ko${25 + i}`] ?? null),
       sfPredictions: Array.from({ length: 2 }, (_, i) => userData[`ko${29 + i}`] ?? null),

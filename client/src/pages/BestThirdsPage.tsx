@@ -24,6 +24,7 @@ export default function BestThirdsPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [selections, setSelections] = useState<Set<string>>(new Set());
   const [customOrders, setCustomOrders] = useState<CustomOrders>(() => loadCustomOrders());
+  const [oddvarCustomOrders, setOddvarCustomOrders] = useState<CustomOrders>({});
   const [canEdit, setCanEdit] = useState(true);
   const [canViewOthers, setCanViewOthers] = useState(false);
   const [lockedMessage, setLockedMessage] = useState<string | null>(null);
@@ -82,10 +83,13 @@ export default function BestThirdsPage() {
     setLoading(true);
     if (selectedUserId) {
       // Fetch selected user's best-thirds
-      get<{ selections: string[]; matches: Match[] }>(`/users/${selectedUserId}/best-thirds`)
-        .then(({ selections, matches }) => {
+      get<{ selections: string[]; matches: Match[]; customOrders?: CustomOrders }>(`/users/${selectedUserId}/best-thirds`)
+        .then(({ selections, matches, customOrders }) => {
           setMatches(matches);
           setSelections(new Set(selections));
+          if (customOrders) {
+            setOddvarCustomOrders(customOrders);
+          }
           setLoading(false);
         })
         .catch(() => {
@@ -102,6 +106,7 @@ export default function BestThirdsPage() {
           setMatches(matches);
           setCanEdit(canEdit);
           setSelections(new Set(selections));
+          setOddvarCustomOrders({});
           setLoading(false);
         })
         .catch(() => {
@@ -112,7 +117,9 @@ export default function BestThirdsPage() {
   }, [selectedUserId]);
 
   function getStandings(group: string): Standing[] {
-    return orderedStandings(matches, group, customOrders);
+    // Use oddvar's custom orders if viewing oddvar's predictions
+    const orders = selectedUserId === 'oddvar@geheb.com' ? oddvarCustomOrders : customOrders;
+    return orderedStandings(matches, group, orders);
   }
 
   async function moveTeam(group: string, standings: Standing[], idx: number, dir: 'up' | 'down') {

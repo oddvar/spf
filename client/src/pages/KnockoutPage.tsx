@@ -1,7 +1,7 @@
 import { useState, useEffect, useTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { get, put, post, ApiError } from '../api/client';
-import { resolveSlot, loadCustomOrders, type GroupMatch } from '../utils/standings';
+import { resolveSlot, loadCustomOrders, type GroupMatch, type CustomOrders } from '../utils/standings';
 
 interface User {
   id: string;
@@ -71,6 +71,7 @@ export default function KnockoutPage() {
   const [fPred,    setFPred]    = useState<string | null>(null);
   const [thirdPred, setThirdPred] = useState<string | null>(null);
   const customOrders = loadCustomOrders();
+  const [selectedUserCustomOrders, setSelectedUserCustomOrders] = useState<CustomOrders>({});
   const [groupMatches, setGroupMatches] = useState<GroupMatchFull[]>([]);
   const [bestThirds, setBestThirds] = useState<string[]>([]);
   const [canEdit, setCanEdit] = useState(true);
@@ -148,12 +149,17 @@ export default function KnockoutPage() {
         try {
           const [ko, thirds, inactiveRes, oddvarKo] = await Promise.all([
             get<any>(`/users/${selectedUserId}/knockout`),
-            get<{ selections: string[]; matches: GroupMatchFull[] }>(`/users/${selectedUserId}/best-thirds`),
+            get<{ selections: string[]; matches: GroupMatchFull[]; customOrders?: CustomOrders }>(`/users/${selectedUserId}/best-thirds`),
             get<{ inactiveTeams: string[] }>('/knockout/inactive-teams'),
             get<any>('/knockout/oddvar-r32').catch(() => ({ r32Predictions: [] })),
           ]);
           setKoMatches(ko.r32Predictions);
           setInactiveTeams(new Set(inactiveRes.inactiveTeams));
+          if (thirds.customOrders) {
+            setSelectedUserCustomOrders(thirds.customOrders);
+          } else {
+            setSelectedUserCustomOrders({});
+          }
 
           // Extract oddvar's teams for all stages and track which match they're in
           const extractTeamsFromStage = (predictions: any[]) => {
@@ -272,7 +278,8 @@ export default function KnockoutPage() {
     if (loading || koMatches.length === 0 || bestThirds.length === 0) return;
 
     function slot(s: string): string {
-      return resolveSlot(s, groupMatches, bestThirds, customOrders);
+      const orders = selectedUserId ? selectedUserCustomOrders : customOrders;
+      return resolveSlot(s, groupMatches, bestThirds, orders);
     }
 
     // Build R32 matches with resolved team names
@@ -287,7 +294,8 @@ export default function KnockoutPage() {
     function r32Winner(koNum: number): string {
       const m = koMatches.find((x) => x.ko_number === koNum);
       if (!m?.prediction) return '?';
-      return m.prediction === 'H' ? slot(m.home_team) : slot(m.away_team);
+      const winner = m.prediction === 'H' ? slot(m.home_team) : slot(m.away_team);
+      return winner || '?';
     }
 
     function r16Winner(pairIdx: number): string {
@@ -384,7 +392,7 @@ export default function KnockoutPage() {
     }).catch((err) => {
       console.error('Failed to save rendered matches:', err);
     });
-  }, [koMatches, r16Preds, qfPreds, sfPreds, fPred, thirdPred, groupMatches, bestThirds, customOrders, loading]);
+  }, [koMatches, r16Preds, qfPreds, sfPreds, fPred, thirdPred, groupMatches, bestThirds, customOrders, selectedUserCustomOrders, loading, selectedUserId]);
 
   function predictThird(pred: KoPred) {
     setThirdPred(pred);
@@ -491,7 +499,8 @@ export default function KnockoutPage() {
 
   // ── Name resolution helpers ────────────────────────────────────────────────
   function slot(s: string): string {
-    return resolveSlot(s, groupMatches, bestThirds, customOrders);
+    const orders = selectedUserId ? selectedUserCustomOrders : customOrders;
+    return resolveSlot(s, groupMatches, bestThirds, orders);
   }
 
   function r32Winner(koNum: number): string {
@@ -528,7 +537,7 @@ export default function KnockoutPage() {
   function teams(round: number, idx: number): [string, string] {
     if (round === 0) {
       const m = koMatches.find((x) => x.ko_number === R32[idx]);
-      return m ? [slot(m.home_team), slot(m.away_team)] : ['?', '?'];
+      return m ? [slot(m.home_team) || '?', slot(m.away_team) || '?'] : ['?', '?'];
     }
     if (round === 1) return [r32Winner(R32[idx * 2]), r32Winner(R32[idx * 2 + 1])];
     if (round === 2) return [r16Winner(idx * 2), r16Winner(idx * 2 + 1)];
@@ -751,7 +760,7 @@ export default function KnockoutPage() {
                         const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
                         return teamSets[round]?.has(home) ? '1.1em' : '1em';
                       })(),
-                    }}>{home}</span>
+                    }}>{home || '?'}</span>
                     {pred === 'H' && <span className="bracket-check">✓</span>}
                   </div>
                   <div
@@ -779,7 +788,7 @@ export default function KnockoutPage() {
                         const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
                         return teamSets[round]?.has(away) ? '1.1em' : '1em';
                       })(),
-                    }}>{away}</span>
+                    }}>{away || '?'}</span>
                     {pred === 'A' && <span className="bracket-check">✓</span>}
                   </div>
                 </div>
