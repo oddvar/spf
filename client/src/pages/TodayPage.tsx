@@ -226,11 +226,11 @@ export default function TodayPage() {
                       >
                         Home {!match.resolvedHomeTeam && '(not yet decided)'} ({match.nextStageInfo.nextStagePredictions.home.length})
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
                         {!match.resolvedHomeTeam ? (
-                          <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Team not yet decided</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Team not yet decided</span>
                         ) : match.nextStageInfo.nextStagePredictions.home.length === 0 ? (
-                          <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>—</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>—</span>
                         ) : (
                           [...match.nextStageInfo.nextStagePredictions.home]
                             .sort((a, b) => a.last_name.localeCompare(b.last_name))
@@ -241,11 +241,7 @@ export default function TodayPage() {
                                 <div
                                   key={pred.user_id}
                                   style={{
-                                    padding: '0.5rem',
-                                    backgroundColor: 'var(--bg)',
-                                    borderRadius: '4px',
-                                    border: '1px solid var(--border)',
-                                    fontSize: '0.875rem',
+                                    fontSize: '0.75rem',
                                     fontWeight: isLoggedInUser ? 'bold' : 'normal',
                                   }}
                                 >
@@ -270,28 +266,29 @@ export default function TodayPage() {
                       >
                         Away {!match.resolvedAwayTeam && '(not yet decided)'} ({match.nextStageInfo.nextStagePredictions.away.length})
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
                         {!match.resolvedAwayTeam ? (
-                          <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Team not yet decided</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Team not yet decided</span>
                         ) : match.nextStageInfo.nextStagePredictions.away.length === 0 ? (
-                          <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>—</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>—</span>
                         ) : (
                           [...match.nextStageInfo.nextStagePredictions.away]
                             .sort((a, b) => a.last_name.localeCompare(b.last_name))
-                            .map((pred) => (
-                            <div
-                              key={pred.user_id}
-                              style={{
-                                padding: '0.5rem',
-                                backgroundColor: 'var(--bg)',
-                                borderRadius: '4px',
-                                border: '1px solid var(--border)',
-                                fontSize: '0.875rem',
-                              }}
-                            >
-                              {pred.first_name} {pred.last_name}
-                            </div>
-                          ))
+                            .map((pred) => {
+                              const isLoggedInUser = pred.first_name === localStorage.getItem('firstName') &&
+                                                     pred.last_name === localStorage.getItem('lastName');
+                              return (
+                                <div
+                                  key={pred.user_id}
+                                  style={{
+                                    fontSize: '0.75rem',
+                                    fontWeight: isLoggedInUser ? 'bold' : 'normal',
+                                  }}
+                                >
+                                  {pred.first_name} {pred.last_name}
+                                </div>
+                              );
+                            })
                         )}
                       </div>
                     </div>

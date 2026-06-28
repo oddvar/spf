@@ -83,13 +83,16 @@ router.get('/today', requireAuth, async (req: AuthRequest, res: Response) => {
     const resolvedMatches: Record<number, { home_team: string; away_team: string }> = {};
 
     // Parse resolved match data and index by ko_number
-    const parseMatches = (jsonStr: string | null) => {
+    const parseMatches = (jsonStr: string | null | any) => {
       if (!jsonStr) return [];
-      try {
-        return JSON.parse(jsonStr);
-      } catch {
-        return [];
+      if (typeof jsonStr === 'string') {
+        try {
+          return JSON.parse(jsonStr);
+        } catch {
+          return [];
+        }
       }
+      return Array.isArray(jsonStr) ? jsonStr : [];
     };
 
     const r32Matches = parseMatches(oddvarData.ko_r32_matches);
@@ -178,83 +181,62 @@ router.get('/today', requireAuth, async (req: AuthRequest, res: Response) => {
           resultFromOddvar = (resultRows as any[])[0].result || null;
         }
 
-        // For knockout matches, get the next stage match and fetch predictions
-        // Only if both teams in current match have been resolved
-        const currentResolvedHome = resolvedMatches[match.ko_number]?.home_team;
-        const currentResolvedAway = resolvedMatches[match.ko_number]?.away_team;
+        // For R32 matches, show users based on their R16 match predictions
+        if (match.stage === 'r32') {
+          const currentResolvedHome = resolvedMatches[match.ko_number]?.home_team;
+          const currentResolvedAway = resolvedMatches[match.ko_number]?.away_team;
 
-        const nextInfo = getNextStageInfo(match.ko_number, match.stage);
-        if (nextInfo && currentResolvedHome && currentResolvedAway) {
-          // Get oddvar@geheb.com's prediction for the current match
-          const [oddvarRows] = await pool.execute(
-            `SELECT ${colName} as prediction FROM users WHERE email = ?`,
-            ['oddvar@geheb.com'],
-          );
-          const oddvarPrediction = (oddvarRows as any[])[0]?.[colName] as string | null;
-
-          if (oddvarPrediction) {
-            // Determine which team advances
-            const advancingTeam = oddvarPrediction === 'H' ? match.home_team : match.away_team;
-
-            // Get next stage match
-            const [nextMatchRows] = await pool.execute(
-              `SELECT id FROM matches WHERE ko_number = ? AND stage != ?`,
-              [nextInfo.nextKoNumber, match.stage],
+          if (currentResolvedHome && currentResolvedAway) {
+            // Fetch all users' R16 matches
+            const [usersWithR16] = await pool.execute(
+              `SELECT id, first_name, last_name, ko_r16_matches FROM users
+               WHERE active = 1 AND email != ? AND ko_r16_matches IS NOT NULL`,
+              ['oddvar@geheb.com'],
             );
-            const nextMatch = (nextMatchRows as any[])[0];
 
-            if (nextMatch) {
-              // Get predictions for the next stage match
-              const nextColName = `ko${nextInfo.nextKoNumber}`;
-              const [nextPredRows] = await pool.execute(
-                `SELECT id, first_name, last_name, ${nextColName} as prediction
-                 FROM users
-                 WHERE ${nextColName} IS NOT NULL AND active = 1 AND email != ?
-                 ORDER BY first_name, last_name`,
-                ['oddvar@geheb.com'],
-              );
+            const homeUsers: Prediction[] = [];
+            const awayUsers: Prediction[] = [];
 
-              // Get the next match details to know which team is home/away in each prediction
-              const [nextMatchDetailsRows] = await pool.execute(
-                `SELECT home_team, away_team FROM matches WHERE ko_number = ? LIMIT 1`,
-                [nextInfo.nextKoNumber],
-              );
-              const nextMatchDetails = (nextMatchDetailsRows as any[])[0];
+            for (const user of usersWithR16 as any[]) {
+              try {
+                const r16Data = typeof user.ko_r16_matches === 'string'
+                  ? JSON.parse(user.ko_r16_matches)
+                  : user.ko_r16_matches;
 
-              if (nextMatchDetails) {
-                const homeUsers: Prediction[] = [];
-                const awayUsers: Prediction[] = [];
+                if (!Array.isArray(r16Data)) continue;
 
-                for (const row of nextPredRows as any[]) {
-                  const pred: Prediction = {
-                    user_id: row.id,
-                    first_name: row.first_name,
-                    last_name: row.last_name,
-                    prediction: row.prediction,
-                  };
+                // Check if user has the R32 home_team or away_team anywhere in their R16 matches
+                const hasHomeTeam = r16Data.some((m: any) => m.home_team === currentResolvedHome || m.away_team === currentResolvedHome);
+                const hasAwayTeam = r16Data.some((m: any) => m.home_team === currentResolvedAway || m.away_team === currentResolvedAway);
 
-                  // Check if this user has the advancing team in the next stage
-                  const homeTeamIsAdvancing = nextMatchDetails.home_team === advancingTeam;
-                  const awayTeamIsAdvancing = nextMatchDetails.away_team === advancingTeam;
-
-                  if (homeTeamIsAdvancing && row.prediction === 'H') {
-                    homeUsers.push(pred);
-                  } else if (homeTeamIsAdvancing && row.prediction === 'A') {
-                    awayUsers.push(pred);
-                  } else if (awayTeamIsAdvancing && row.prediction === 'H') {
-                    homeUsers.push(pred);
-                  } else if (awayTeamIsAdvancing && row.prediction === 'A') {
-                    awayUsers.push(pred);
-                  }
+                if (hasHomeTeam) {
+                  homeUsers.push({
+                    user_id: user.id,
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    prediction: null,
+                  });
                 }
-
-                nextStageInfo = {
-                  nextStagePredictions: {
-                    home: homeUsers,
-                    away: awayUsers,
-                  },
-                };
+                if (hasAwayTeam) {
+                  awayUsers.push({
+                    user_id: user.id,
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    prediction: null,
+                  });
+                }
+              } catch (err) {
+                // Skip users with invalid R16 data
               }
+            }
+
+            if (homeUsers.length > 0 || awayUsers.length > 0) {
+              nextStageInfo = {
+                nextStagePredictions: {
+                  home: homeUsers,
+                  away: awayUsers,
+                },
+              };
             }
           }
         }
