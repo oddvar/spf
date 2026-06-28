@@ -146,6 +146,7 @@ export default function KnockoutPage() {
     const fetchData = async () => {
       if (selectedUserId) {
         // Fetch selected user's knockout predictions
+        setLoading(true);
         try {
           const [ko, thirds, inactiveRes, oddvarKo] = await Promise.all([
             get<any>(`/users/${selectedUserId}/knockout`),
@@ -155,11 +156,7 @@ export default function KnockoutPage() {
           ]);
           setKoMatches(ko.r32Predictions);
           setInactiveTeams(new Set(inactiveRes.inactiveTeams));
-          if (thirds.customOrders) {
-            setSelectedUserCustomOrders(thirds.customOrders);
-          } else {
-            setSelectedUserCustomOrders({});
-          }
+          setSelectedUserCustomOrders(thirds.customOrders || {});
 
           // Extract oddvar's teams for all stages and track which match they're in
           const extractTeamsFromStage = (predictions: any[]) => {
@@ -203,6 +200,9 @@ export default function KnockoutPage() {
           setCanEdit(false);
           setGroupMatches(thirds.matches.filter((m) => m.group_name));
           setBestThirds(thirds.selections);
+          if (!thirds.customOrders) {
+            setSelectedUserCustomOrders({});
+          }
           setLoading(false);
         } catch (err) {
           console.error('Failed to fetch user knockout predictions:', err);
@@ -838,10 +838,10 @@ export default function KnockoutPage() {
                   onClick={tpEnabled ? () => predictThird('H') : undefined}
                 >
                   <span className="bracket-team-name" style={{
-                    textDecoration: (inactiveTeams.has(home) && !oddvarR32Teams.has(home)) ? 'line-through' : 'none',
-                    fontWeight: oddvarR32Teams.has(home) ? 'bold' : 'normal',
-                    fontStyle: oddvarR32Teams.has(home) && oddvarR32MatchMap.get(home) !== 32 ? 'italic' : 'normal',
-                    fontSize: oddvarR32Teams.has(home) ? '1.1em' : '1em',
+                    textDecoration: (inactiveTeams.has(home) && !oddvarFTeams.has(home)) ? 'line-through' : 'none',
+                    fontWeight: oddvarFTeams.has(home) ? 'bold' : 'normal',
+                    fontStyle: 'normal',
+                    fontSize: oddvarFTeams.has(home) ? '1.1em' : '1em',
                   }}>{home}</span>
                   {thirdPred === 'H' && <span className="bracket-check">✓</span>}
                 </div>
@@ -850,10 +850,10 @@ export default function KnockoutPage() {
                   onClick={tpEnabled ? () => predictThird('A') : undefined}
                 >
                   <span className="bracket-team-name" style={{
-                    textDecoration: (inactiveTeams.has(away) && !oddvarR32Teams.has(away)) ? 'line-through' : 'none',
-                    fontWeight: oddvarR32Teams.has(away) ? 'bold' : 'normal',
-                    fontStyle: oddvarR32Teams.has(away) && oddvarR32MatchMap.get(away) !== 32 ? 'italic' : 'normal',
-                    fontSize: oddvarR32Teams.has(away) ? '1.1em' : '1em',
+                    textDecoration: (inactiveTeams.has(away) && !oddvarFTeams.has(away)) ? 'line-through' : 'none',
+                    fontWeight: oddvarFTeams.has(away) ? 'bold' : 'normal',
+                    fontStyle: 'normal',
+                    fontSize: oddvarFTeams.has(away) ? '1.1em' : '1em',
                   }}>{away}</span>
                   {thirdPred === 'A' && <span className="bracket-check">✓</span>}
                 </div>

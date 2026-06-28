@@ -85,6 +85,7 @@ router.get('/users/:userId/best-thirds', requireAuth, async (req: AuthRequest, r
     // Fetch pred_group_X columns separately if user has them
     let customOrders: Record<string, string[]> = {};
     try {
+      // Query all groups (a-l)
       const GROUPS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'];
       const predGroupCols = GROUPS.map((g) => `pred_group_${g}`).join(', ');
       const [predGroupRows] = await pool.execute(
@@ -103,8 +104,9 @@ router.get('/users/:userId/best-thirds', requireAuth, async (req: AuthRequest, r
           }
         }
       }
-    } catch {
+    } catch (err) {
       // pred_group columns may not exist, silently continue
+      console.error('Error fetching custom orders:', err);
     }
 
     if ((userRows as any[]).length === 0) {
@@ -163,22 +165,45 @@ router.get('/users/:userId/knockout', requireAuth, async (req: AuthRequest, res:
       match_datetime: (m.match_datetime as string).replace(' ', 'T') + 'Z',
     });
 
-    // Get team active status
-    const [teamRows] = await pool.execute(
-      `SELECT name, active FROM teams WHERE name IN (${(matchRows as any[]).map(() => '?').join(',')})`,
-      (matchRows as any[]).flatMap((m) => [m.home_team, m.away_team]),
-    );
-    const teamActiveMap: { [key: string]: boolean } = {};
-    for (const team of teamRows as any[]) {
-      teamActiveMap[team.name] = team.active === 1;
-    }
+    // Try to use saved ko_r32_matches first (has resolved team names)
+    let r32Predictions: any[];
+    const savedMatches = userData.ko_r32_matches
+      ? (typeof userData.ko_r32_matches === 'string' ? JSON.parse(userData.ko_r32_matches) : userData.ko_r32_matches)
+      : null;
 
-    const r32Predictions = (matchRows as any[]).map((m) => ({
-      ...normalise(m),
-      prediction: userData[`ko${m.ko_number}`] ?? null,
-      homeTeamActive: teamActiveMap[m.home_team] !== false,
-      awayTeamActive: teamActiveMap[m.away_team] !== false,
-    }));
+    if (Array.isArray(savedMatches) && savedMatches.length > 0 && savedMatches[0]?.home_team && savedMatches[0]?.away_team) {
+      // Use saved matches - they have pre-resolved team names
+      const matchMap = new Map((matchRows as any[]).map((m) => [m.ko_number, m]));
+      r32Predictions = savedMatches.map((saved: any) => {
+        const dbMatch = matchMap.get(saved.match_number);
+        return {
+          id: dbMatch?.id,
+          ko_number: dbMatch?.ko_number,
+          home_team: saved.home_team,
+          away_team: saved.away_team,
+          match_datetime: dbMatch ? normalise(dbMatch).match_datetime : null,
+          location: dbMatch?.location || null,
+          prediction: userData[`ko${saved.match_number}`] ?? null,
+        };
+      });
+    } else {
+      // Fallback to slot codes from database
+      const [teamRows] = await pool.execute(
+        `SELECT name, active FROM teams WHERE name IN (${(matchRows as any[]).map(() => '?').join(',')})`,
+        (matchRows as any[]).flatMap((m) => [m.home_team, m.away_team]),
+      );
+      const teamActiveMap: { [key: string]: boolean } = {};
+      for (const team of teamRows as any[]) {
+        teamActiveMap[team.name] = team.active === 1;
+      }
+
+      r32Predictions = (matchRows as any[]).map((m) => ({
+        ...normalise(m),
+        prediction: userData[`ko${m.ko_number}`] ?? null,
+        homeTeamActive: teamActiveMap[m.home_team] !== false,
+        awayTeamActive: teamActiveMap[m.away_team] !== false,
+      }));
+    }
 
     res.json({
       r32Predictions,

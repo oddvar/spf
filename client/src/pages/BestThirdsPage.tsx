@@ -87,9 +87,8 @@ export default function BestThirdsPage() {
         .then(({ selections, matches, customOrders }) => {
           setMatches(matches);
           setSelections(new Set(selections));
-          if (customOrders) {
-            setOddvarCustomOrders(customOrders);
-          }
+          setCanEdit(false);
+          setOddvarCustomOrders(customOrders || {});
           setLoading(false);
         })
         .catch(() => {
@@ -98,6 +97,7 @@ export default function BestThirdsPage() {
         });
     } else {
       // Fetch own best-thirds
+      setOddvarCustomOrders({});
       Promise.all([
         get<{ matches: Match[]; canEdit: boolean }>('/matches'),
         get<{ selections: string[] }>('/best-thirds'),
@@ -106,7 +106,6 @@ export default function BestThirdsPage() {
           setMatches(matches);
           setCanEdit(canEdit);
           setSelections(new Set(selections));
-          setOddvarCustomOrders({});
           setLoading(false);
         })
         .catch(() => {
