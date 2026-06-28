@@ -94,18 +94,16 @@ export default function RankingPage() {
     // When showing "all + r32" or "all + r32 + r16", also fetch group-only to get group stage max
     const fetchData = async () => {
       try {
-        const data = await get<{ rankings: UserRanking[]; maxMatchesWithResults: number }>(url);
+        const data = await get<{ rankings: UserRanking[]; maxMatchesWithResults: number; groupStageMaxPoints: number }>(url);
         setRankings(data.rankings);
         setMaxMatchesWithResults(data.maxMatchesWithResults);
 
         // If showing "all + r32" or "all + r32 + r16", fetch group-only ranking to get the group stage max
         if (cutoffMatchNumber === 'all+r32' || cutoffMatchNumber === 'all+r32+r16') {
-          const groupData = await get<{ rankings: UserRanking[] }>('/ranking');
-          if (groupData.rankings.length > 0) {
-            setGroupStageMaxPoints(groupData.rankings[0].maxPossibleScore);
-          }
+          const groupData = await get<{ groupStageMaxPoints: number }>('/ranking');
+          setGroupStageMaxPoints(groupData.groupStageMaxPoints);
         } else {
-          setGroupStageMaxPoints(data.rankings.length > 0 ? data.rankings[0].maxPossibleScore : 0);
+          setGroupStageMaxPoints(data.groupStageMaxPoints);
         }
       } catch (err) {
         console.error('Failed to fetch rankings:', err);

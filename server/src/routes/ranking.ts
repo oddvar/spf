@@ -29,6 +29,7 @@ interface UserRanking {
 interface RankingResponse {
   rankings: UserRanking[];
   maxMatchesWithResults: number;
+  groupStageMaxPoints: number;
 }
 
 router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
@@ -364,6 +365,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
     res.json({
       rankings,
       maxMatchesWithResults,
+      groupStageMaxPoints: maxGroupStageScore,
     });
   } catch (err) {
     console.error('Error fetching ranking:', err);
