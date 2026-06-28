@@ -148,26 +148,38 @@ export default function KnockoutPage() {
         // Fetch selected user's knockout predictions
         setLoading(true);
         try {
-          const [ko, thirds, inactiveRes, oddvarKo] = await Promise.all([
+          const [ko, thirds, inactiveRes, r32Res, r16Res, qfRes, sfRes, fRes] = await Promise.all([
             get<any>(`/users/${selectedUserId}/knockout`),
             get<{ selections: string[]; matches: GroupMatchFull[]; customOrders?: CustomOrders }>(`/users/${selectedUserId}/best-thirds`),
             get<{ inactiveTeams: string[] }>('/knockout/inactive-teams'),
             get<any>('/knockout/oddvar-r32').catch(() => ({ r32Predictions: [] })),
+            get<any>('/knockout/oddvar-r16').catch(() => ({ r16Predictions: [] })),
+            get<any>('/knockout/oddvar-qf').catch(() => ({ qfPredictions: [] })),
+            get<any>('/knockout/oddvar-sf').catch(() => ({ sfPredictions: [] })),
+            get<any>('/knockout/oddvar-f').catch(() => ({ fPrediction: null })),
           ]);
           setKoMatches(ko.r32Predictions);
           setInactiveTeams(new Set(inactiveRes.inactiveTeams));
           setSelectedUserCustomOrders(thirds.customOrders || {});
+
+          const oddvarKo = {
+            r32Predictions: r32Res.r32Predictions,
+            r16Predictions: r16Res.r16Predictions,
+            qfPredictions: qfRes.qfPredictions,
+            sfPredictions: sfRes.sfPredictions,
+            fPrediction: fRes.fPrediction,
+          };
 
           // Extract oddvar's teams for all stages and track which match they're in
           const extractTeamsFromStage = (predictions: any[]) => {
             const teams = new Set<string>();
             const matchMap = new Map<string, number>();
             for (const m of predictions || []) {
-              if (m.home_team) {
+              if (m.home_team && m.home_team !== '?') {
                 teams.add(m.home_team);
                 matchMap.set(m.home_team, m.match_number);
               }
-              if (m.away_team) {
+              if (m.away_team && m.away_team !== '?') {
                 teams.add(m.away_team);
                 matchMap.set(m.away_team, m.match_number);
               }
@@ -211,26 +223,38 @@ export default function KnockoutPage() {
       } else {
         // Fetch own knockout predictions
         try {
-          const [ko, group, thirds, inactiveRes, oddvarKo] = await Promise.all([
+          const [ko, group, thirds, inactiveRes, r32Res, r16Res, qfRes, sfRes, fRes] = await Promise.all([
             get<{ r32Predictions: KoMatch[]; canEdit: boolean; r16Predictions: (string | null)[]; qfPredictions: (string | null)[]; sfPredictions: (string | null)[]; fPredictions: (string | null)[]; thirdPrediction: string | null }>('/knockout/matches'),
             get<{ matches: GroupMatchFull[]; canEdit: boolean }>('/matches'),
             get<{ selections: string[] }>('/best-thirds'),
             get<{ inactiveTeams: string[] }>('/knockout/inactive-teams'),
             get<any>('/knockout/oddvar-r32').catch(() => ({ r32Predictions: [] })),
+            get<any>('/knockout/oddvar-r16').catch(() => ({ r16Predictions: [] })),
+            get<any>('/knockout/oddvar-qf').catch(() => ({ qfPredictions: [] })),
+            get<any>('/knockout/oddvar-sf').catch(() => ({ sfPredictions: [] })),
+            get<any>('/knockout/oddvar-f').catch(() => ({ fPrediction: null })),
           ]);
           setKoMatches(ko.r32Predictions);
           setInactiveTeams(new Set(inactiveRes.inactiveTeams));
+
+          const oddvarKo = {
+            r32Predictions: r32Res.r32Predictions,
+            r16Predictions: r16Res.r16Predictions,
+            qfPredictions: qfRes.qfPredictions,
+            sfPredictions: sfRes.sfPredictions,
+            fPrediction: fRes.fPrediction,
+          };
 
           // Extract oddvar's teams for all stages and track which match they're in
           const extractTeamsFromStage = (predictions: any[]) => {
             const teams = new Set<string>();
             const matchMap = new Map<string, number>();
             for (const m of predictions || []) {
-              if (m.home_team) {
+              if (m.home_team && m.home_team !== '?') {
                 teams.add(m.home_team);
                 matchMap.set(m.home_team, m.match_number);
               }
-              if (m.away_team) {
+              if (m.away_team && m.away_team !== '?') {
                 teams.add(m.away_team);
                 matchMap.set(m.away_team, m.match_number);
               }
@@ -708,6 +732,17 @@ export default function KnockoutPage() {
               const pred     = koMatch?.prediction ?? r16Pred ?? qfPred ?? sfPred ?? finalPred ?? null;
               const isSaving = savingId === koMatch?.id && isPending;
 
+              // Calculate match number for current round (used for team styling)
+              const getCurrentMatchNumber = (): number | undefined => {
+                if (round === 0) return koMatch?.ko_number;
+                if (round === 1) return 17 + idx;  // R16: match_number 17-24
+                if (round === 2) return 25 + idx;  // QF: match_number 25-28
+                if (round === 3) return 29 + idx;  // SF: match_number 29-30
+                if (round === 4) return 31;        // Final: match_number 31
+                return undefined;
+              };
+              const currentMatchNumber = getCurrentMatchNumber();
+
               const homeClick =
                 koMatch && canEdit && !isSaving ? () => predict(koMatch.id, 'H') :
                 r16Enabled   ? () => predictR16(idx, 'H')  :
@@ -753,7 +788,7 @@ export default function KnockoutPage() {
                         const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
                         const matchMaps = [oddvarR32MatchMap, oddvarR16MatchMap, oddvarQFMatchMap, oddvarSFMatchMap, oddvarFMatchMap];
                         const isInOddvar = teamSets[round]?.has(home);
-                        const isWrongMatch = isInOddvar && matchMaps[round]?.get(home) !== koMatch?.ko_number;
+                        const isWrongMatch = isInOddvar && matchMaps[round]?.get(home) !== currentMatchNumber;
                         return isWrongMatch ? 'italic' : 'normal';
                       })(),
                       fontSize: (() => {
@@ -781,7 +816,7 @@ export default function KnockoutPage() {
                         const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
                         const matchMaps = [oddvarR32MatchMap, oddvarR16MatchMap, oddvarQFMatchMap, oddvarSFMatchMap, oddvarFMatchMap];
                         const isInOddvar = teamSets[round]?.has(away);
-                        const isWrongMatch = isInOddvar && matchMaps[round]?.get(away) !== koMatch?.ko_number;
+                        const isWrongMatch = isInOddvar && matchMaps[round]?.get(away) !== currentMatchNumber;
                         return isWrongMatch ? 'italic' : 'normal';
                       })(),
                       fontSize: (() => {

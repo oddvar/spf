@@ -285,4 +285,100 @@ router.get('/knockout/oddvar-r32', async (_req, res: Response) => {
   }
 });
 
+router.get('/knockout/oddvar-r16', async (_req, res: Response) => {
+  try {
+    const [userRows] = await pool.execute(
+      'SELECT ko_r16_matches FROM users WHERE email = ?',
+      ['oddvar@geheb.com'],
+    );
+
+    const user = (userRows as any[])[0];
+    if (!user) {
+      res.status(404).json({ error: 'Oddvar user not found' });
+      return;
+    }
+
+    const r16Matches = user.ko_r16_matches
+      ? (typeof user.ko_r16_matches === 'string' ? JSON.parse(user.ko_r16_matches) : user.ko_r16_matches)
+      : [];
+
+    res.json({ r16Predictions: r16Matches });
+  } catch (err) {
+    console.error('Error fetching oddvar r16 matches:', err);
+    res.status(500).json({ error: 'Failed to fetch oddvar r16 matches' });
+  }
+});
+
+router.get('/knockout/oddvar-qf', async (_req, res: Response) => {
+  try {
+    const [userRows] = await pool.execute(
+      'SELECT ko_qf_matches FROM users WHERE email = ?',
+      ['oddvar@geheb.com'],
+    );
+
+    const user = (userRows as any[])[0];
+    if (!user) {
+      res.status(404).json({ error: 'Oddvar user not found' });
+      return;
+    }
+
+    const qfMatches = user.ko_qf_matches
+      ? (typeof user.ko_qf_matches === 'string' ? JSON.parse(user.ko_qf_matches) : user.ko_qf_matches)
+      : [];
+
+    res.json({ qfPredictions: qfMatches });
+  } catch (err) {
+    console.error('Error fetching oddvar qf matches:', err);
+    res.status(500).json({ error: 'Failed to fetch oddvar qf matches' });
+  }
+});
+
+router.get('/knockout/oddvar-sf', async (_req, res: Response) => {
+  try {
+    const [userRows] = await pool.execute(
+      'SELECT ko_sf_matches FROM users WHERE email = ?',
+      ['oddvar@geheb.com'],
+    );
+
+    const user = (userRows as any[])[0];
+    if (!user) {
+      res.status(404).json({ error: 'Oddvar user not found' });
+      return;
+    }
+
+    const sfMatches = user.ko_sf_matches
+      ? (typeof user.ko_sf_matches === 'string' ? JSON.parse(user.ko_sf_matches) : user.ko_sf_matches)
+      : [];
+
+    res.json({ sfPredictions: sfMatches });
+  } catch (err) {
+    console.error('Error fetching oddvar sf matches:', err);
+    res.status(500).json({ error: 'Failed to fetch oddvar sf matches' });
+  }
+});
+
+router.get('/knockout/oddvar-f', async (_req, res: Response) => {
+  try {
+    const [userRows] = await pool.execute(
+      'SELECT ko_f_match FROM users WHERE email = ?',
+      ['oddvar@geheb.com'],
+    );
+
+    const user = (userRows as any[])[0];
+    if (!user) {
+      res.status(404).json({ error: 'Oddvar user not found' });
+      return;
+    }
+
+    const fMatch = user.ko_f_match
+      ? (typeof user.ko_f_match === 'string' ? JSON.parse(user.ko_f_match) : user.ko_f_match)
+      : null;
+
+    res.json({ fPrediction: fMatch });
+  } catch (err) {
+    console.error('Error fetching oddvar final match:', err);
+    res.status(500).json({ error: 'Failed to fetch oddvar final match' });
+  }
+});
+
 export default router;

@@ -181,33 +181,34 @@ router.get('/today', requireAuth, async (req: AuthRequest, res: Response) => {
           resultFromOddvar = (resultRows as any[])[0].result || null;
         }
 
-        // For R32 matches, show users based on their R16 match predictions
-        if (match.stage === 'r32') {
+        // For R32 and R16 matches, show users based on their next-stage match predictions
+        if (match.stage === 'r32' || match.stage === 'r16') {
           const currentResolvedHome = resolvedMatches[match.ko_number]?.home_team;
           const currentResolvedAway = resolvedMatches[match.ko_number]?.away_team;
 
           if (currentResolvedHome && currentResolvedAway) {
-            // Fetch all users' R16 matches
-            const [usersWithR16] = await pool.execute(
-              `SELECT id, first_name, last_name, ko_r16_matches FROM users
-               WHERE active = 1 AND email != ? AND ko_r16_matches IS NOT NULL`,
+            // For R32: fetch users' R16 matches; for R16: fetch users' QF matches
+            const column = match.stage === 'r32' ? 'ko_r16_matches' : 'ko_qf_matches';
+            const [usersWithNextMatches] = await pool.execute(
+              `SELECT id, first_name, last_name, ${column} FROM users
+               WHERE active = 1 AND email != ? AND ${column} IS NOT NULL`,
               ['oddvar@geheb.com'],
             );
 
             const homeUsers: Prediction[] = [];
             const awayUsers: Prediction[] = [];
 
-            for (const user of usersWithR16 as any[]) {
+            for (const user of usersWithNextMatches as any[]) {
               try {
-                const r16Data = typeof user.ko_r16_matches === 'string'
-                  ? JSON.parse(user.ko_r16_matches)
-                  : user.ko_r16_matches;
+                const nextData = typeof user[column] === 'string'
+                  ? JSON.parse(user[column])
+                  : user[column];
 
-                if (!Array.isArray(r16Data)) continue;
+                if (!Array.isArray(nextData)) continue;
 
-                // Check if user has the R32 home_team or away_team anywhere in their R16 matches
-                const hasHomeTeam = r16Data.some((m: any) => m.home_team === currentResolvedHome || m.away_team === currentResolvedHome);
-                const hasAwayTeam = r16Data.some((m: any) => m.home_team === currentResolvedAway || m.away_team === currentResolvedAway);
+                // Check if user has the current home_team or away_team anywhere in their next stage matches
+                const hasHomeTeam = nextData.some((m: any) => m.home_team === currentResolvedHome || m.away_team === currentResolvedHome);
+                const hasAwayTeam = nextData.some((m: any) => m.home_team === currentResolvedAway || m.away_team === currentResolvedAway);
 
                 if (hasHomeTeam) {
                   homeUsers.push({
@@ -226,7 +227,7 @@ router.get('/today', requireAuth, async (req: AuthRequest, res: Response) => {
                   });
                 }
               } catch (err) {
-                // Skip users with invalid R16 data
+                // Skip users with invalid next stage data
               }
             }
 
