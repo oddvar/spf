@@ -149,7 +149,14 @@ export default function TodayPage() {
                 </div>
               </div>
 
-              {match.predictions.length === 0 ? (
+              {(() => {
+                const homeTeam = match.resolvedHomeTeam || match.home_team;
+                const awayTeam = match.resolvedAwayTeam || match.away_team;
+                const bothTeamsUnknown = homeTeam === '?' && awayTeam === '?';
+                return bothTeamsUnknown;
+              })() ? (
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Teams not yet known</p>
+              ) : match.predictions.length === 0 ? (
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>No predictions yet</p>
               ) : match.match_number ? (
                 // Group stage match: show in three columns (H, D, A)
