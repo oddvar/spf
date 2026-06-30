@@ -152,67 +152,96 @@ export default function TodayPage() {
               {(() => {
                 const homeTeam = match.resolvedHomeTeam || match.home_team;
                 const awayTeam = match.resolvedAwayTeam || match.away_team;
-                const anyTeamUnknown = homeTeam === '?' || awayTeam === '?';
-                return anyTeamUnknown;
-              })() ? (
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Teams not yet known</p>
-              ) : match.predictions.length === 0 ? (
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>No predictions yet</p>
-              ) : match.match_number ? (
-                // Group stage match: show in three columns (H, D, A)
-                <div>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.75rem', color: 'var(--text-secondary)' }}>
-                    {match.predictions.length} prediction{match.predictions.length !== 1 ? 's' : ''}:
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-                    {(['H', 'D', 'A'] as const).map((predType) => {
-                      const predictions = match.predictions
-                        .filter((p) => p.prediction === predType)
-                        .sort((a, b) => a.last_name.localeCompare(b.last_name));
-                      return (
-                        <div key={predType}>
-                          <div
-                            style={{
-                              fontSize: '0.75rem',
-                              fontWeight: 'bold',
-                              textTransform: 'uppercase',
-                              color: 'var(--text-secondary)',
-                              marginBottom: '0.5rem',
-                              paddingBottom: '0.5rem',
-                              borderBottom: '2px solid var(--border)',
-                            }}
-                          >
-                            {predType === 'H' ? 'Home' : predType === 'D' ? 'Draw' : 'Away'} ({predictions.length})
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-                            {predictions.length === 0 ? (
-                              <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>—</span>
-                            ) : (
-                              predictions.map((pred) => {
-                                const isLoggedInUser = pred.first_name === localStorage.getItem('firstName') &&
-                                                       pred.last_name === localStorage.getItem('lastName');
-                                const isGoldUser = pred.first_name === 'Martin' && pred.last_name === 'Gjerstad';
-                                return (
-                                  <div
-                                    key={pred.user_id}
-                                    className={isGoldUser ? 'user-gold' : ''}
-                                    style={{
-                                      fontSize: '0.75rem',
-                                      fontWeight: isLoggedInUser ? 'bold' : 'normal',
-                                    }}
-                                  >
-                                    {pred.first_name} {pred.last_name}
-                                  </div>
-                                );
-                              })
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : match.nextStageInfo ? (
+                const bothTeamsUnknown = homeTeam === '?' && awayTeam === '?';
+                const homeTeamKnown = homeTeam !== '?';
+                const awayTeamKnown = awayTeam !== '?';
+
+                if (bothTeamsUnknown) {
+                  return <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Teams not yet known</p>;
+                }
+
+                if (match.predictions.length === 0) {
+                  return <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>No predictions yet</p>;
+                }
+
+                if (match.match_number) {
+                  // Group stage match: show only predictions for known teams
+                  const validPredTypes = (
+                    homeTeamKnown && awayTeamKnown ? ['H', 'D', 'A'] :
+                    homeTeamKnown ? ['H'] :
+                    awayTeamKnown ? ['A'] :
+                    []
+                  ) as ('H' | 'D' | 'A')[];
+
+                  if (validPredTypes.length === 0) {
+                    return <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>No predictions yet</p>;
+                  }
+
+                  const gridCols = validPredTypes.length === 1 ? '1fr' : validPredTypes.length === 2 ? '1fr 1fr' : '1fr 1fr 1fr';
+
+                  return (
+                    <div>
+                      <div style={{ fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.75rem', color: 'var(--text-secondary)' }}>
+                        {match.predictions.length} prediction{match.predictions.length !== 1 ? 's' : ''}:
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: '1rem' }}>
+                        {validPredTypes.map((predType) => {
+                          const predictions = match.predictions
+                            .filter((p) => p.prediction === predType)
+                            .sort((a, b) => a.last_name.localeCompare(b.last_name));
+                          return (
+                            <div key={predType}>
+                              <div
+                                style={{
+                                  fontSize: '0.75rem',
+                                  fontWeight: 'bold',
+                                  textTransform: 'uppercase',
+                                  color: 'var(--text-secondary)',
+                                  marginBottom: '0.5rem',
+                                  paddingBottom: '0.5rem',
+                                  borderBottom: '2px solid var(--border)',
+                                }}
+                              >
+                                {predType === 'H' ? 'Home' : predType === 'D' ? 'Draw' : 'Away'} ({predictions.length})
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                                {predictions.length === 0 ? (
+                                  <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>—</span>
+                                ) : (
+                                  predictions.map((pred) => {
+                                    const isLoggedInUser = pred.first_name === localStorage.getItem('firstName') &&
+                                                           pred.last_name === localStorage.getItem('lastName');
+                                    const isGoldUser = pred.first_name === 'Martin' && pred.last_name === 'Gjerstad';
+                                    return (
+                                      <div
+                                        key={pred.user_id}
+                                        className={isGoldUser ? 'user-gold' : ''}
+                                        style={{
+                                          fontSize: '0.75rem',
+                                          fontWeight: isLoggedInUser ? 'bold' : 'normal',
+                                        }}
+                                      >
+                                        {pred.first_name} {pred.last_name}
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
+
+                return null;
+              })()}
+              {(() => {
+                const homeTeam = match.resolvedHomeTeam || match.home_team;
+                const awayTeam = match.resolvedAwayTeam || match.away_team;
+                return homeTeam === '?' && awayTeam === '?';
+              })() ? null : match.nextStageInfo ? (
                 // Knockout match: show users who have the advancing team in next stage
                 <div>
                   <div style={{ fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.75rem', color: 'var(--text-secondary)' }}>
@@ -304,7 +333,11 @@ export default function TodayPage() {
               ) : match.ko_number && (!match.resolvedHomeTeam || !match.resolvedAwayTeam) ? (
                 // Knockout match with unresolved teams: don't show predictions
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>The teams in this match have not yet been decided</p>
-              ) : (
+              ) : (() => {
+                const homeTeam = match.resolvedHomeTeam || match.home_team;
+                const awayTeam = match.resolvedAwayTeam || match.away_team;
+                return homeTeam === '?' && awayTeam === '?';
+              })() ? null : (
                 // Knockout match fallback: show in two columns (H, A)
                 <div>
                   <div style={{ fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.75rem', color: 'var(--text-secondary)' }}>
