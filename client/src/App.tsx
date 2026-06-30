@@ -87,6 +87,8 @@ function AppRoutes() {
   const [isOddvar, setIsOddvar] = useState(false);
 
   useEffect(() => {
+    let lastToken: string | null = null;
+
     const fetchUserEmail = async () => {
       try {
         const token = localStorage.getItem('token');
@@ -112,14 +114,28 @@ function AppRoutes() {
 
     fetchUserEmail();
 
+    // Poll for token changes to handle same-tab login/logout
+    const interval = setInterval(() => {
+      const currentToken = localStorage.getItem('token');
+      if (currentToken !== lastToken) {
+        lastToken = currentToken;
+        fetchUserEmail();
+      }
+    }, 500);
+
     // Listen for storage changes (logout in another tab)
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'token' && !e.newValue) {
-        setIsOddvar(false);
+      if (e.key === 'token') {
+        lastToken = e.newValue;
+        fetchUserEmail();
       }
     };
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   return (

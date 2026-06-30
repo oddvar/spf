@@ -141,7 +141,7 @@ router.post('/login', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/auth/me', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/me', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const [rows] = await pool.execute(
       'SELECT email FROM users WHERE id = ?',
