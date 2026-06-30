@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../db.js';
+import { requireAuth, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -137,6 +138,26 @@ router.post('/login', async (req: Request, res: Response) => {
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/auth/me', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const [rows] = await pool.execute(
+      'SELECT email FROM users WHERE id = ?',
+      [req.userId!],
+    );
+    const users = rows as Array<{ email: string }>;
+
+    if (users.length === 0) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    res.json({ email: users[0].email });
+  } catch (err) {
+    console.error('Error fetching current user:', err);
+    res.status(500).json({ error: 'Failed to fetch user info' });
   }
 });
 

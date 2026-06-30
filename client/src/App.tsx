@@ -87,9 +87,39 @@ function AppRoutes() {
   const [isOddvar, setIsOddvar] = useState(false);
 
   useEffect(() => {
-    // Only check email for oddvar, always show shouts by default
-    const email = localStorage.getItem('email');
-    setIsOddvar(email === 'oddvar@geheb.com');
+    const fetchUserEmail = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setIsOddvar(false);
+          return;
+        }
+
+        const response = await fetch('/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json() as { email?: string };
+          setIsOddvar(data.email === 'oddvar@geheb.com');
+        } else {
+          setIsOddvar(false);
+        }
+      } catch (err) {
+        console.error('Failed to fetch user email:', err);
+        setIsOddvar(false);
+      }
+    };
+
+    fetchUserEmail();
+
+    // Listen for storage changes (logout in another tab)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'token' && !e.newValue) {
+        setIsOddvar(false);
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   return (
