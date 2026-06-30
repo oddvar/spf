@@ -82,13 +82,13 @@ function Nav({ showShouts, isOddvar }: { showShouts: boolean; isOddvar: boolean 
 
 function AppRoutes() {
   useTheme();
-  const [showShouts, setShowShouts] = useState(false);
+  // Default to showing all navigation links (true), only Events defaults to false (oddvar only)
+  const [showShouts] = useState(true);
   const [isOddvar, setIsOddvar] = useState(false);
 
   useEffect(() => {
-    const canViewOthers = localStorage.getItem('canViewOthers') === 'true';
+    // Only check email for oddvar, always show shouts by default
     const email = localStorage.getItem('email');
-    setShowShouts(canViewOthers);
     setIsOddvar(email === 'oddvar@geheb.com');
   }, []);
 
