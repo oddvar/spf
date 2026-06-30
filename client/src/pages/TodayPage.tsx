@@ -237,7 +237,7 @@ export default function TodayPage() {
 
                 return null;
               })()}
-              {(() => {
+              {!match.match_number && ((() => {
                 const homeTeam = match.resolvedHomeTeam || match.home_team;
                 const awayTeam = match.resolvedAwayTeam || match.away_team;
                 return homeTeam === '?' && awayTeam === '?';
@@ -391,7 +391,7 @@ export default function TodayPage() {
                     })}
                   </div>
                 </div>
-              )}
+              ))}
             </div>
           ))}
         </div>
