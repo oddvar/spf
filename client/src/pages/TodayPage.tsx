@@ -337,7 +337,7 @@ export default function TodayPage() {
                 const homeTeam = match.resolvedHomeTeam || match.home_team;
                 const awayTeam = match.resolvedAwayTeam || match.away_team;
                 return homeTeam === '?' && awayTeam === '?';
-              })() ? null : (
+              })() ? null : match.stage === 'r16' ? null : (
                 // Knockout match fallback: show in two columns (H, A)
                 <div>
                   <div style={{ fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.75rem', color: 'var(--text-secondary)' }}>
