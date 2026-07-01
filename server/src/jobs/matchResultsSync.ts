@@ -124,16 +124,46 @@ function mapWinnerToResult(
   return null;
 }
 
+interface KOStageConfig {
+  currentField: string;
+  nextField: string;
+  koRange: [number, number];
+}
+
+const KO_STAGE_CONFIG: { [key: string]: KOStageConfig } = {
+  r32: {
+    currentField: 'ko_r32_matches',
+    nextField: 'ko_r16_matches',
+    koRange: [1, 16],
+  },
+  r16: {
+    currentField: 'ko_r16_matches',
+    nextField: 'ko_qf_matches',
+    koRange: [17, 24],
+  },
+  qf: {
+    currentField: 'ko_qf_matches',
+    nextField: 'ko_sf_matches',
+    koRange: [25, 28],
+  },
+  sf: {
+    currentField: 'ko_sf_matches',
+    nextField: 'ko_f_match',
+    koRange: [29, 30],
+  },
+};
+
 async function updateMatchResult(
   matchId: number,
   result: 'H' | 'A' | 'D' | null,
+  apiMatch?: FootballDataMatch,
 ): Promise<void> {
   console.log(`[UPDATE] Updating match ${matchId} with result: ${result}`);
 
   try {
     // Get match details FIRST to determine which column to update
     const [matchRows] = await pool.execute(
-      'SELECT id, match_number, ko_number FROM matches WHERE id = ?',
+      'SELECT id, match_number, ko_number, stage FROM matches WHERE id = ?',
       [matchId],
     );
 
@@ -144,12 +174,12 @@ async function updateMatchResult(
 
     const match = (matchRows as any[])[0];
     console.log(
-      `[UPDATE] Match details - ID: ${match.id}, match_number: ${match.match_number}, ko_number: ${match.ko_number}`,
+      `[UPDATE] Match details - ID: ${match.id}, match_number: ${match.match_number}, ko_number: ${match.ko_number}, stage: ${match.stage}`,
     );
 
     // Get oddvar user
     const [oddvarRows] = await pool.execute(
-      'SELECT id FROM users WHERE email = ?',
+      'SELECT id, ko_r32_matches, ko_r16_matches, ko_qf_matches, ko_sf_matches FROM users WHERE email = ?',
       ['oddvar@geheb.com'],
     );
 
@@ -158,7 +188,8 @@ async function updateMatchResult(
       return;
     }
 
-    const oddvarId = (oddvarRows as any[])[0].id;
+    const oddvarUser = (oddvarRows as any[])[0];
+    const oddvarId = oddvarUser.id;
     console.log(`[UPDATE] Oddvar user ID: ${oddvarId}`);
 
     // Determine which column to update based on match type
@@ -194,8 +225,136 @@ async function updateMatchResult(
     );
 
     console.log(`[UPDATE] ✓ Matches table update succeeded:`, matchUpdateResult);
+
+    // For knockout matches, update next stage data
+    if (match.ko_number && match.stage && KO_STAGE_CONFIG[match.stage] && apiMatch) {
+      await updateKnockoutNextStage(
+        oddvarUser,
+        oddvarId,
+        match.ko_number,
+        match.stage,
+        result,
+        apiMatch,
+      );
+    }
   } catch (err) {
     console.error(`[UPDATE] ✗ Error updating match result:`, err);
+  }
+}
+
+async function updateKnockoutNextStage(
+  oddvarUser: any,
+  oddvarId: string,
+  koNumber: number,
+  stage: string,
+  result: 'H' | 'A' | 'D' | null,
+  apiMatch: FootballDataMatch,
+): Promise<void> {
+  try {
+    const config = KO_STAGE_CONFIG[stage];
+    if (!config) {
+      console.log(`[UPDATE] No KO stage config found for stage: ${stage}`);
+      return;
+    }
+
+    // Get current stage matches from oddvar
+    const currentMatches = oddvarUser[config.currentField]
+      ? (typeof oddvarUser[config.currentField] === 'string'
+          ? JSON.parse(oddvarUser[config.currentField])
+          : oddvarUser[config.currentField])
+      : [];
+
+    // Find the match in current stage by match_number
+    const currentMatch = currentMatches.find(
+      (m: any) => m.match_number === koNumber,
+    );
+
+    if (!currentMatch) {
+      console.log(
+        `[UPDATE] Could not find match ${koNumber} in ${config.currentField}`,
+      );
+      return;
+    }
+
+    // Determine winning team
+    let winningTeam: string | null = null;
+    let losingTeam: string | null = null;
+
+    if (result === 'H') {
+      winningTeam = normalizeTeamName(apiMatch.homeTeam.shortName);
+      losingTeam = normalizeTeamName(apiMatch.awayTeam.shortName);
+    } else if (result === 'A') {
+      winningTeam = normalizeTeamName(apiMatch.awayTeam.shortName);
+      losingTeam = normalizeTeamName(apiMatch.homeTeam.shortName);
+    } else if (result === 'D') {
+      // For draws in knockout, this shouldn't happen in real World Cup
+      console.log(`[UPDATE] Draw result for knockout match - skipping next stage update`);
+      return;
+    }
+
+    if (!winningTeam) {
+      console.log(`[UPDATE] Could not determine winning team for result: ${result}`);
+      return;
+    }
+
+    console.log(`[UPDATE] Winning team: ${winningTeam}, Losing team: ${losingTeam}`);
+
+    // Get or create next stage matches array
+    let nextMatches = oddvarUser[config.nextField]
+      ? (typeof oddvarUser[config.nextField] === 'string'
+          ? JSON.parse(oddvarUser[config.nextField])
+          : oddvarUser[config.nextField])
+      : [];
+
+    if (!Array.isArray(nextMatches)) {
+      nextMatches = [];
+    }
+
+    // Calculate next match index (teams from this match advance)
+    // For R32 (1-16) → R16: matches 1-8 feed into R16 matches 1-4, matches 9-16 feed into R16 matches 5-8
+    const nextMatchIndex = Math.floor((koNumber - 1) / 2);
+
+    // Find or create next match entry
+    let nextMatch = nextMatches[nextMatchIndex];
+    if (!nextMatch) {
+      nextMatch = {
+        match_number: nextMatchIndex + 1,
+        home_team: null,
+        away_team: null,
+      };
+      nextMatches[nextMatchIndex] = nextMatch;
+    }
+
+    // Add winning team to appropriate slot
+    const isOddMatch = koNumber % 2 === 1; // odd numbers (1,3,5...) go to home, even (2,4,6...) go to away
+    if (isOddMatch) {
+      nextMatch.home_team = winningTeam;
+    } else {
+      nextMatch.away_team = winningTeam;
+    }
+
+    console.log(
+      `[UPDATE] Updated next stage match ${nextMatchIndex + 1}: ${nextMatch.home_team || '?'} vs ${nextMatch.away_team || '?'}`,
+    );
+
+    // Update oddvar's next stage field
+    await pool.execute(
+      `UPDATE users SET ${config.nextField} = ? WHERE id = ?`,
+      [JSON.stringify(nextMatches), oddvarId],
+    );
+
+    console.log(`[UPDATE] ✓ Updated ${config.nextField} for oddvar`);
+
+    // Mark losing team as inactive
+    if (losingTeam) {
+      await pool.execute(
+        'UPDATE teams SET active = 0 WHERE UPPER(name) = ?',
+        [losingTeam],
+      );
+      console.log(`[UPDATE] ✓ Marked ${losingTeam} as inactive (active=0)`);
+    }
+  } catch (err) {
+    console.error(`[UPDATE] ✗ Error updating knockout next stage:`, err);
   }
 }
 
@@ -219,16 +378,83 @@ async function processQueueItem(item: QueueItem): Promise<SyncResult> {
 
     const apiMatches = await getMatchResults(dateStr, matchLabel);
 
+    // For knockout matches with placeholder teams, look up real teams from oddvar's data
+    let homeTeam = item.match.home_team;
+    let awayTeam = item.match.away_team;
+
+    if (item.match.ko_number && !item.match.match_number) {
+      // This is a knockout match - check if teams are placeholders
+      if (homeTeam && homeTeam.match(/^[0-9][A-Z]$/)) {
+        console.log(
+          `[SYNC] Match ${matchLabel}: Detected placeholder home team: ${homeTeam} - Looking up real team`,
+        );
+        // Get oddvar's knockout matches for this stage
+        const [oddvarRows] = await pool.execute(
+          'SELECT ko_r32_matches, ko_r16_matches, ko_qf_matches, ko_sf_matches FROM users WHERE email = ?',
+          ['oddvar@geheb.com'],
+        );
+
+        if ((oddvarRows as any[]).length > 0) {
+          const oddvarUser = (oddvarRows as any[])[0];
+          const koNum = item.match.ko_number;
+
+          let stageMatches = null;
+          if (koNum >= 1 && koNum <= 16) {
+            // R32 matches
+            stageMatches = oddvarUser.ko_r32_matches
+              ? (typeof oddvarUser.ko_r32_matches === 'string'
+                  ? JSON.parse(oddvarUser.ko_r32_matches)
+                  : oddvarUser.ko_r32_matches)
+              : null;
+          } else if (koNum >= 17 && koNum <= 24) {
+            // R16 matches
+            stageMatches = oddvarUser.ko_r16_matches
+              ? (typeof oddvarUser.ko_r16_matches === 'string'
+                  ? JSON.parse(oddvarUser.ko_r16_matches)
+                  : oddvarUser.ko_r16_matches)
+              : null;
+          } else if (koNum >= 25 && koNum <= 28) {
+            // QF matches
+            stageMatches = oddvarUser.ko_qf_matches
+              ? (typeof oddvarUser.ko_qf_matches === 'string'
+                  ? JSON.parse(oddvarUser.ko_qf_matches)
+                  : oddvarUser.ko_qf_matches)
+              : null;
+          } else if (koNum >= 29 && koNum <= 30) {
+            // SF matches
+            stageMatches = oddvarUser.ko_sf_matches
+              ? (typeof oddvarUser.ko_sf_matches === 'string'
+                  ? JSON.parse(oddvarUser.ko_sf_matches)
+                  : oddvarUser.ko_sf_matches)
+              : null;
+          }
+
+          if (stageMatches && Array.isArray(stageMatches)) {
+            const matchData = stageMatches.find(
+              (m: any) => m.match_number === koNum,
+            );
+            if (matchData) {
+              homeTeam = matchData.home_team || homeTeam;
+              awayTeam = matchData.away_team || awayTeam;
+              console.log(
+                `[SYNC] Match ${matchLabel}: Resolved teams from oddvar: ${homeTeam} vs ${awayTeam}`,
+              );
+            }
+          }
+        }
+      }
+    }
+
     console.log(
-      `[SYNC] Match ${matchLabel}: Searching for match with DB teams: ${item.match.home_team} vs ${item.match.away_team}`,
+      `[SYNC] Match ${matchLabel}: Searching for match with DB teams: ${homeTeam} vs ${awayTeam}`,
     );
 
     // Find matching game
     const matchedApiMatch = apiMatches.find((m) => {
       const apiHome = normalizeTeamName(m.homeTeam.shortName);
       const apiAway = normalizeTeamName(m.awayTeam.shortName);
-      const dbHome = normalizeTeamName(item.match.home_team);
-      const dbAway = normalizeTeamName(item.match.away_team);
+      const dbHome = normalizeTeamName(homeTeam);
+      const dbAway = normalizeTeamName(awayTeam);
 
       console.log(
         `[SYNC] Match ${matchLabel}: Comparing API "${apiHome}" vs "${apiAway}" with DB "${dbHome}" vs "${dbAway}" - Match: ${apiHome === dbHome && apiAway === dbAway}`,
@@ -242,7 +468,7 @@ async function processQueueItem(item: QueueItem): Promise<SyncResult> {
         `[SYNC] Match ${matchLabel}: ✓ Found and matched: ${matchedApiMatch.homeTeam.shortName} vs ${matchedApiMatch.awayTeam.shortName} (Status: ${matchedApiMatch.status})`,
       );
       const result = mapWinnerToResult(matchedApiMatch.score.winner);
-      await updateMatchResult(item.match.id, result);
+      await updateMatchResult(item.match.id, result, matchedApiMatch);
       console.log(
         `[SYNC] ✓ Match ${matchLabel}: Result updated to ${result} (${matchedApiMatch.score.fullTime.home}-${matchedApiMatch.score.fullTime.away})`,
       );
