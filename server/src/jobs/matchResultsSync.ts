@@ -127,6 +127,7 @@ function mapWinnerToResult(
 interface KOStageConfig {
   currentField: string;
   nextField: string;
+  nextStage: string;
   koRange: [number, number];
 }
 
@@ -134,21 +135,25 @@ const KO_STAGE_CONFIG: { [key: string]: KOStageConfig } = {
   r32: {
     currentField: 'ko_r32_matches',
     nextField: 'ko_r16_matches',
+    nextStage: 'r16',
     koRange: [1, 16],
   },
   r16: {
     currentField: 'ko_r16_matches',
     nextField: 'ko_qf_matches',
+    nextStage: 'qf',
     koRange: [17, 24],
   },
   qf: {
     currentField: 'ko_qf_matches',
     nextField: 'ko_sf_matches',
+    nextStage: 'sf',
     koRange: [25, 28],
   },
   sf: {
     currentField: 'ko_sf_matches',
     nextField: 'ko_f_match',
+    nextStage: 'f',
     koRange: [29, 30],
   },
 };
@@ -232,6 +237,7 @@ async function updateMatchResult(
         oddvarUser,
         oddvarId,
         match.ko_number,
+        match.id,
         match.stage,
         result,
         apiMatch,
@@ -246,6 +252,7 @@ async function updateKnockoutNextStage(
   oddvarUser: any,
   oddvarId: string,
   koNumber: number,
+  matchId: number,
   stage: string,
   result: 'H' | 'A' | 'D' | null,
   apiMatch: FootballDataMatch,
@@ -324,31 +331,36 @@ async function updateKnockoutNextStage(
       nextMatches = [];
     }
 
-    // Calculate next match index (teams from this match advance)
-    // For R32 (1-16) → R16: matches 1-8 feed into R16 matches 1-4, matches 9-16 feed into R16 matches 5-8
-    const nextMatchIndex = Math.floor((koNumber - 1) / 2);
+    // Look up which next-stage match this winner feeds into
+    const [nextStageRows] = await pool.execute(
+      `SELECT ko_number, home_team FROM matches WHERE stage = ? AND (home_team = ? OR away_team = ?)`,
+      [config.nextStage, `Winner ${matchId}`, `Winner ${matchId}`],
+    );
 
-    // Find or create next match entry
-    let nextMatch = nextMatches[nextMatchIndex];
-    if (!nextMatch) {
-      nextMatch = {
-        match_number: nextMatchIndex + 1,
-        home_team: null,
-        away_team: null,
-      };
-      nextMatches[nextMatchIndex] = nextMatch;
+    if ((nextStageRows as any[]).length === 0) {
+      console.log(`[UPDATE] No next stage match found referencing match id ${matchId}`);
+      return;
     }
 
-    // Add winning team to appropriate slot
-    const isOddMatch = koNumber % 2 === 1; // odd numbers (1,3,5...) go to home, even (2,4,6...) go to away
-    if (isOddMatch) {
+    const nextStageMatch = (nextStageRows as any[])[0];
+    const nextKoNumber: number = nextStageMatch.ko_number;
+    const isHome: boolean = nextStageMatch.home_team === `Winner ${matchId}`;
+
+    // Find or create entry in nextMatches by ko_number (used as match_number)
+    let nextMatch = nextMatches.find((m: any) => m.match_number === nextKoNumber);
+    if (!nextMatch) {
+      nextMatch = { match_number: nextKoNumber, home_team: null, away_team: null };
+      nextMatches.push(nextMatch);
+    }
+
+    if (isHome) {
       nextMatch.home_team = winningTeamName;
     } else {
       nextMatch.away_team = winningTeamName;
     }
 
     console.log(
-      `[UPDATE] Updated next stage match ${nextMatchIndex + 1}: ${nextMatch.home_team || '?'} vs ${nextMatch.away_team || '?'}`,
+      `[UPDATE] Updated next stage match ${nextKoNumber}: ${nextMatch.home_team || '?'} vs ${nextMatch.away_team || '?'}`,
     );
 
     // Update oddvar's next stage field
