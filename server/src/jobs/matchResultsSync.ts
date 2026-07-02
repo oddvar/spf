@@ -276,28 +276,42 @@ async function updateKnockoutNextStage(
       return;
     }
 
-    // Determine winning team
-    let winningTeam: string | null = null;
-    let losingTeam: string | null = null;
+    // Determine winning team - use team name from database
+    let winningTeamName: string | null = null;
+    let losingTeamNormalized: string | null = null;
 
     if (result === 'H') {
-      winningTeam = normalizeTeamName(apiMatch.homeTeam.shortName);
-      losingTeam = normalizeTeamName(apiMatch.awayTeam.shortName);
+      // Winning team is home team
+      const [homeTeamRows] = await pool.execute(
+        'SELECT name FROM teams WHERE UPPER(name) = ?',
+        [normalizeTeamName(apiMatch.homeTeam.shortName)],
+      );
+      if ((homeTeamRows as any[]).length > 0) {
+        winningTeamName = (homeTeamRows as any[])[0].name.toLowerCase();
+      }
+      losingTeamNormalized = normalizeTeamName(apiMatch.awayTeam.shortName);
     } else if (result === 'A') {
-      winningTeam = normalizeTeamName(apiMatch.awayTeam.shortName);
-      losingTeam = normalizeTeamName(apiMatch.homeTeam.shortName);
+      // Winning team is away team
+      const [awayTeamRows] = await pool.execute(
+        'SELECT name FROM teams WHERE UPPER(name) = ?',
+        [normalizeTeamName(apiMatch.awayTeam.shortName)],
+      );
+      if ((awayTeamRows as any[]).length > 0) {
+        winningTeamName = (awayTeamRows as any[])[0].name.toLowerCase();
+      }
+      losingTeamNormalized = normalizeTeamName(apiMatch.homeTeam.shortName);
     } else if (result === 'D') {
       // For draws in knockout, this shouldn't happen in real World Cup
       console.log(`[UPDATE] Draw result for knockout match - skipping next stage update`);
       return;
     }
 
-    if (!winningTeam) {
+    if (!winningTeamName) {
       console.log(`[UPDATE] Could not determine winning team for result: ${result}`);
       return;
     }
 
-    console.log(`[UPDATE] Winning team: ${winningTeam}, Losing team: ${losingTeam}`);
+    console.log(`[UPDATE] Winning team: ${winningTeamName}, Losing team (normalized): ${losingTeamNormalized}`);
 
     // Get or create next stage matches array
     let nextMatches = oddvarUser[config.nextField]
@@ -328,9 +342,9 @@ async function updateKnockoutNextStage(
     // Add winning team to appropriate slot
     const isOddMatch = koNumber % 2 === 1; // odd numbers (1,3,5...) go to home, even (2,4,6...) go to away
     if (isOddMatch) {
-      nextMatch.home_team = winningTeam;
+      nextMatch.home_team = winningTeamName;
     } else {
-      nextMatch.away_team = winningTeam;
+      nextMatch.away_team = winningTeamName;
     }
 
     console.log(
@@ -346,12 +360,12 @@ async function updateKnockoutNextStage(
     console.log(`[UPDATE] ✓ Updated ${config.nextField} for oddvar`);
 
     // Mark losing team as inactive
-    if (losingTeam) {
+    if (losingTeamNormalized) {
       await pool.execute(
         'UPDATE teams SET active = 0 WHERE UPPER(name) = ?',
-        [losingTeam],
+        [losingTeamNormalized],
       );
-      console.log(`[UPDATE] ✓ Marked ${losingTeam} as inactive (active=0)`);
+      console.log(`[UPDATE] ✓ Marked ${losingTeamNormalized} as inactive (active=0)`);
     }
   } catch (err) {
     console.error(`[UPDATE] ✗ Error updating knockout next stage:`, err);

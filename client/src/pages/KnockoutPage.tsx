@@ -159,7 +159,7 @@ export default function KnockoutPage() {
             get<any>('/knockout/oddvar-f').catch(() => ({ fPrediction: null })),
           ]);
           setKoMatches(ko.r32Predictions);
-          setInactiveTeams(new Set(inactiveRes.inactiveTeams));
+          setInactiveTeams(new Set(inactiveRes.inactiveTeams.map(team => team.toLowerCase())));
           setSelectedUserCustomOrders(thirds.customOrders || {});
 
           const oddvarKo = {
@@ -176,12 +176,14 @@ export default function KnockoutPage() {
             const matchMap = new Map<string, number>();
             for (const m of predictions || []) {
               if (m.home_team && m.home_team !== '?') {
-                teams.add(m.home_team);
-                matchMap.set(m.home_team, m.match_number);
+                const normalizedHome = m.home_team.toLowerCase();
+                teams.add(normalizedHome);
+                matchMap.set(normalizedHome, m.match_number);
               }
               if (m.away_team && m.away_team !== '?') {
-                teams.add(m.away_team);
-                matchMap.set(m.away_team, m.match_number);
+                const normalizedAway = m.away_team.toLowerCase();
+                teams.add(normalizedAway);
+                matchMap.set(normalizedAway, m.match_number);
               }
             }
             return { teams, matchMap };
@@ -235,7 +237,7 @@ export default function KnockoutPage() {
             get<any>('/knockout/oddvar-f').catch(() => ({ fPrediction: null })),
           ]);
           setKoMatches(ko.r32Predictions);
-          setInactiveTeams(new Set(inactiveRes.inactiveTeams));
+          setInactiveTeams(new Set(inactiveRes.inactiveTeams.map(team => team.toLowerCase())));
 
           const oddvarKo = {
             r32Predictions: r32Res.r32Predictions,
@@ -251,12 +253,14 @@ export default function KnockoutPage() {
             const matchMap = new Map<string, number>();
             for (const m of predictions || []) {
               if (m.home_team && m.home_team !== '?') {
-                teams.add(m.home_team);
-                matchMap.set(m.home_team, m.match_number);
+                const normalizedHome = m.home_team.toLowerCase();
+                teams.add(normalizedHome);
+                matchMap.set(normalizedHome, m.match_number);
               }
               if (m.away_team && m.away_team !== '?') {
-                teams.add(m.away_team);
-                matchMap.set(m.away_team, m.match_number);
+                const normalizedAway = m.away_team.toLowerCase();
+                teams.add(normalizedAway);
+                matchMap.set(normalizedAway, m.match_number);
               }
             }
             return { teams, matchMap };
@@ -777,23 +781,23 @@ export default function KnockoutPage() {
                     <span className="bracket-team-name" style={{
                       textDecoration: (() => {
                         const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
-                        const isInOddvar = teamSets[round]?.has(home);
-                        return (inactiveTeams.has(home) && !isInOddvar) ? 'line-through' : 'none';
+                        const isInOddvar = teamSets[round]?.has(home.toLowerCase());
+                        return (inactiveTeams.has(home.toLowerCase()) && !isInOddvar) ? 'line-through' : 'none';
                       })(),
                       fontWeight: (() => {
                         const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
-                        return teamSets[round]?.has(home) ? 'bold' : 'normal';
+                        return teamSets[round]?.has(home.toLowerCase()) ? 'bold' : 'normal';
                       })(),
                       fontStyle: (() => {
                         const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
                         const matchMaps = [oddvarR32MatchMap, oddvarR16MatchMap, oddvarQFMatchMap, oddvarSFMatchMap, oddvarFMatchMap];
-                        const isInOddvar = teamSets[round]?.has(home);
-                        const isWrongMatch = isInOddvar && matchMaps[round]?.get(home) !== currentMatchNumber;
+                        const isInOddvar = teamSets[round]?.has(home.toLowerCase());
+                        const isWrongMatch = isInOddvar && matchMaps[round]?.get(home.toLowerCase()) !== currentMatchNumber;
                         return isWrongMatch ? 'italic' : 'normal';
                       })(),
                       fontSize: (() => {
                         const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
-                        return teamSets[round]?.has(home) ? '1.1em' : '1em';
+                        return teamSets[round]?.has(home.toLowerCase()) ? '1.1em' : '1em';
                       })(),
                     }}>{home || '?'}</span>
                     {pred === 'H' && <span className="bracket-check">✓</span>}
@@ -805,23 +809,23 @@ export default function KnockoutPage() {
                     <span className="bracket-team-name" style={{
                       textDecoration: (() => {
                         const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
-                        const isInOddvar = teamSets[round]?.has(away);
-                        return (inactiveTeams.has(away) && !isInOddvar) ? 'line-through' : 'none';
+                        const isInOddvar = teamSets[round]?.has(away.toLowerCase());
+                        return (inactiveTeams.has(away.toLowerCase()) && !isInOddvar) ? 'line-through' : 'none';
                       })(),
                       fontWeight: (() => {
                         const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
-                        return teamSets[round]?.has(away) ? 'bold' : 'normal';
+                        return teamSets[round]?.has(away.toLowerCase()) ? 'bold' : 'normal';
                       })(),
                       fontStyle: (() => {
                         const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
                         const matchMaps = [oddvarR32MatchMap, oddvarR16MatchMap, oddvarQFMatchMap, oddvarSFMatchMap, oddvarFMatchMap];
-                        const isInOddvar = teamSets[round]?.has(away);
-                        const isWrongMatch = isInOddvar && matchMaps[round]?.get(away) !== currentMatchNumber;
+                        const isInOddvar = teamSets[round]?.has(away.toLowerCase());
+                        const isWrongMatch = isInOddvar && matchMaps[round]?.get(away.toLowerCase()) !== currentMatchNumber;
                         return isWrongMatch ? 'italic' : 'normal';
                       })(),
                       fontSize: (() => {
                         const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
-                        return teamSets[round]?.has(away) ? '1.1em' : '1em';
+                        return teamSets[round]?.has(away.toLowerCase()) ? '1.1em' : '1em';
                       })(),
                     }}>{away || '?'}</span>
                     {pred === 'A' && <span className="bracket-check">✓</span>}
@@ -873,10 +877,10 @@ export default function KnockoutPage() {
                   onClick={tpEnabled ? () => predictThird('H') : undefined}
                 >
                   <span className="bracket-team-name" style={{
-                    textDecoration: (inactiveTeams.has(home) && !oddvarFTeams.has(home)) ? 'line-through' : 'none',
-                    fontWeight: oddvarFTeams.has(home) ? 'bold' : 'normal',
+                    textDecoration: (inactiveTeams.has(home.toLowerCase()) && !oddvarFTeams.has(home.toLowerCase())) ? 'line-through' : 'none',
+                    fontWeight: oddvarFTeams.has(home.toLowerCase()) ? 'bold' : 'normal',
                     fontStyle: 'normal',
-                    fontSize: oddvarFTeams.has(home) ? '1.1em' : '1em',
+                    fontSize: oddvarFTeams.has(home.toLowerCase()) ? '1.1em' : '1em',
                   }}>{home}</span>
                   {thirdPred === 'H' && <span className="bracket-check">✓</span>}
                 </div>
@@ -885,10 +889,10 @@ export default function KnockoutPage() {
                   onClick={tpEnabled ? () => predictThird('A') : undefined}
                 >
                   <span className="bracket-team-name" style={{
-                    textDecoration: (inactiveTeams.has(away) && !oddvarFTeams.has(away)) ? 'line-through' : 'none',
-                    fontWeight: oddvarFTeams.has(away) ? 'bold' : 'normal',
+                    textDecoration: (inactiveTeams.has(away.toLowerCase()) && !oddvarFTeams.has(away.toLowerCase())) ? 'line-through' : 'none',
+                    fontWeight: oddvarFTeams.has(away.toLowerCase()) ? 'bold' : 'normal',
                     fontStyle: 'normal',
-                    fontSize: oddvarFTeams.has(away) ? '1.1em' : '1em',
+                    fontSize: oddvarFTeams.has(away.toLowerCase()) ? '1.1em' : '1em',
                   }}>{away}</span>
                   {thirdPred === 'A' && <span className="bracket-check">✓</span>}
                 </div>
