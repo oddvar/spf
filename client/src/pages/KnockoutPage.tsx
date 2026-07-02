@@ -174,16 +174,19 @@ export default function KnockoutPage() {
           const extractTeamsFromStage = (predictions: any[]) => {
             const teams = new Set<string>();
             const matchMap = new Map<string, number>();
-            for (const m of predictions || []) {
+            for (let i = 0; i < (predictions || []).length; i++) {
+              const m = predictions[i];
               if (m.home_team && m.home_team !== '?') {
                 const normalizedHome = m.home_team.toLowerCase();
                 teams.add(normalizedHome);
-                matchMap.set(normalizedHome, m.match_number);
+                // Use array index (0-based) for knockout stages, as match_number might be 1-8
+                matchMap.set(normalizedHome, i);
               }
               if (m.away_team && m.away_team !== '?') {
                 const normalizedAway = m.away_team.toLowerCase();
                 teams.add(normalizedAway);
-                matchMap.set(normalizedAway, m.match_number);
+                // Use array index (0-based) for knockout stages
+                matchMap.set(normalizedAway, i);
               }
             }
             return { teams, matchMap };
@@ -251,16 +254,19 @@ export default function KnockoutPage() {
           const extractTeamsFromStage = (predictions: any[]) => {
             const teams = new Set<string>();
             const matchMap = new Map<string, number>();
-            for (const m of predictions || []) {
+            for (let i = 0; i < (predictions || []).length; i++) {
+              const m = predictions[i];
               if (m.home_team && m.home_team !== '?') {
                 const normalizedHome = m.home_team.toLowerCase();
                 teams.add(normalizedHome);
-                matchMap.set(normalizedHome, m.match_number);
+                // Use array index (0-based) for knockout stages, as match_number might be 1-8
+                matchMap.set(normalizedHome, i);
               }
               if (m.away_team && m.away_team !== '?') {
                 const normalizedAway = m.away_team.toLowerCase();
                 teams.add(normalizedAway);
-                matchMap.set(normalizedAway, m.match_number);
+                // Use array index (0-based) for knockout stages
+                matchMap.set(normalizedAway, i);
               }
             }
             return { teams, matchMap };
@@ -792,7 +798,9 @@ export default function KnockoutPage() {
                         const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
                         const matchMaps = [oddvarR32MatchMap, oddvarR16MatchMap, oddvarQFMatchMap, oddvarSFMatchMap, oddvarFMatchMap];
                         const isInOddvar = teamSets[round]?.has(home.toLowerCase());
-                        const isWrongMatch = isInOddvar && matchMaps[round]?.get(home.toLowerCase()) !== currentMatchNumber;
+                        // For knockout stages (round >= 1), use array index; for R32 (round 0), convert ko_number to 0-based index
+                        const expectedMatchIdx = round === 0 ? (currentMatchNumber ?? 0) - 1 : idx;
+                        const isWrongMatch = isInOddvar && matchMaps[round]?.get(home.toLowerCase()) !== expectedMatchIdx;
                         return isWrongMatch ? 'italic' : 'normal';
                       })(),
                       fontSize: (() => {
@@ -820,7 +828,9 @@ export default function KnockoutPage() {
                         const teamSets = [oddvarR32Teams, oddvarR16Teams, oddvarQFTeams, oddvarSFTeams, oddvarFTeams];
                         const matchMaps = [oddvarR32MatchMap, oddvarR16MatchMap, oddvarQFMatchMap, oddvarSFMatchMap, oddvarFMatchMap];
                         const isInOddvar = teamSets[round]?.has(away.toLowerCase());
-                        const isWrongMatch = isInOddvar && matchMaps[round]?.get(away.toLowerCase()) !== currentMatchNumber;
+                        // For knockout stages (round >= 1), use array index; for R32 (round 0), convert ko_number to 0-based index
+                        const expectedMatchIdx = round === 0 ? (currentMatchNumber ?? 0) - 1 : idx;
+                        const isWrongMatch = isInOddvar && matchMaps[round]?.get(away.toLowerCase()) !== expectedMatchIdx;
                         return isWrongMatch ? 'italic' : 'normal';
                       })(),
                       fontSize: (() => {
