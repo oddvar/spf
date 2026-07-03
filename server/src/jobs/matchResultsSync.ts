@@ -232,16 +232,22 @@ async function updateMatchResult(
     console.log(`[UPDATE] ✓ Matches table update succeeded:`, matchUpdateResult);
 
     // For knockout matches, update next stage data
-    if (match.ko_number && match.stage && KO_STAGE_CONFIG[match.stage] && apiMatch) {
-      await updateKnockoutNextStage(
-        oddvarUser,
-        oddvarId,
-        match.ko_number,
-        match.id,
-        match.stage,
-        result,
-        apiMatch,
-      );
+    if (match.ko_number && match.stage && apiMatch) {
+      if (match.stage === 'f') {
+        // Final match: set ko_winner
+        await updateFinalWinner(oddvarId, result, apiMatch);
+      } else if (KO_STAGE_CONFIG[match.stage]) {
+        // Other knockout stages: advance to next stage
+        await updateKnockoutNextStage(
+          oddvarUser,
+          oddvarId,
+          match.ko_number,
+          match.id,
+          match.stage,
+          result,
+          apiMatch,
+        );
+      }
     }
   } catch (err) {
     console.error(`[UPDATE] ✗ Error updating match result:`, err);
@@ -381,6 +387,52 @@ async function updateKnockoutNextStage(
     }
   } catch (err) {
     console.error(`[UPDATE] ✗ Error updating knockout next stage:`, err);
+  }
+}
+
+async function updateFinalWinner(
+  oddvarId: string,
+  result: 'H' | 'A' | 'D' | null,
+  apiMatch: FootballDataMatch,
+): Promise<void> {
+  try {
+    // Determine winning team
+    let winningTeamName: string | null = null;
+
+    if (result === 'H') {
+      const [homeTeamRows] = await pool.execute(
+        'SELECT name FROM teams WHERE UPPER(name) = ?',
+        [normalizeTeamName(apiMatch.homeTeam.shortName)],
+      );
+      if ((homeTeamRows as any[]).length > 0) {
+        winningTeamName = (homeTeamRows as any[])[0].name.toLowerCase();
+      }
+    } else if (result === 'A') {
+      const [awayTeamRows] = await pool.execute(
+        'SELECT name FROM teams WHERE UPPER(name) = ?',
+        [normalizeTeamName(apiMatch.awayTeam.shortName)],
+      );
+      if ((awayTeamRows as any[]).length > 0) {
+        winningTeamName = (awayTeamRows as any[])[0].name.toLowerCase();
+      }
+    }
+
+    if (!winningTeamName) {
+      console.log(`[UPDATE] Could not determine winning team for final result: ${result}`);
+      return;
+    }
+
+    console.log(`[UPDATE] Tournament winner: ${winningTeamName}`);
+
+    // Update oddvar's ko_winner field
+    await pool.execute(
+      `UPDATE users SET ko_winner = ? WHERE id = ?`,
+      [winningTeamName, oddvarId],
+    );
+
+    console.log(`[UPDATE] ✓ Updated ko_winner for oddvar`);
+  } catch (err) {
+    console.error(`[UPDATE] ✗ Error updating final winner:`, err);
   }
 }
 
