@@ -462,7 +462,7 @@ async function processQueueItem(item: QueueItem): Promise<SyncResult> {
 
     if (item.match.ko_number && !item.match.match_number) {
       // This is a knockout match - check if teams are placeholders
-      if (homeTeam && homeTeam.match(/^[0-9][A-Z]$/)) {
+      if (homeTeam && (homeTeam.match(/^[0-9][A-Z]$/) || homeTeam.match(/^Winner \d+$/i))) {
         console.log(
           `[SYNC] Match ${matchLabel}: Detected placeholder home team: ${homeTeam} - Looking up real team`,
         );
@@ -511,7 +511,7 @@ async function processQueueItem(item: QueueItem): Promise<SyncResult> {
             const matchData = stageMatches.find(
               (m: any) => m.match_number === koNum,
             );
-            if (matchData) {
+            if (matchData && matchData.home_team && !matchData.home_team.match(/^Winner \d+$/i)) {
               homeTeam = matchData.home_team || homeTeam;
               awayTeam = matchData.away_team || awayTeam;
               console.log(
