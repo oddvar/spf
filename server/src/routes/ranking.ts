@@ -45,13 +45,16 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       cutoff = null;
       includeKnockout = true;
       includeR16Bonus = true;
+      includeQFAndBelow = false;
     } else if (cutoffParam === 'all+r32+r16') {
       cutoff = null;
       includeKnockout = true;
       includeR16Bonus = true;
+      includeQFAndBelow = true;
     } else if (cutoffParam === 'all+r32' || cutoffParam === 'all r32') {
       cutoff = null;
       includeKnockout = true;
+      includeQFAndBelow = true;
     } else if (cutoffParam === 'qf+r16+r32+group') {
       cutoff = null;
       includeKnockout = true;
