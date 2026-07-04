@@ -16,6 +16,7 @@ interface UserRanking {
   r16Score: number;
   r16BonusScore: number;
   qfScore: number;
+  qfBonusScore: number;
   sfScore: number;
   finalScore: number;
   thirdPlaceScore: number;
@@ -39,26 +40,31 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
     let cutoff: number | null = null;
     let includeKnockout = false;
     let includeR16Bonus = false;
+    let includeQFBonus = false;
     let includeQFAndBelow = false;
 
     if (cutoffParam === 'all') {
       cutoff = null;
       includeKnockout = true;
       includeR16Bonus = true;
+      includeQFBonus = true;
       includeQFAndBelow = false;
     } else if (cutoffParam === 'all+r32+r16') {
       cutoff = null;
       includeKnockout = true;
       includeR16Bonus = true;
+      includeQFBonus = false;
       includeQFAndBelow = true;
     } else if (cutoffParam === 'all+r32' || cutoffParam === 'all r32') {
       cutoff = null;
       includeKnockout = true;
+      includeQFBonus = false;
       includeQFAndBelow = true;
     } else if (cutoffParam === 'qf+r16+r32+group') {
       cutoff = null;
       includeKnockout = true;
       includeR16Bonus = true;
+      includeQFBonus = true;
       includeQFAndBelow = true;
     } else if (cutoffParam === '') {
       // Group only
@@ -185,7 +191,23 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       }
     }
 
-    const totalMaxPossibleScore = maxGroupStageScore + maxR32Score + maxR16Score + maxR16BonusScore + maxQFScore + maxSFScore + maxFinalScore + maxThirdPlaceScore + maxWinnerScore;
+    // QF Bonus: 4 points per unique team in oddvar's ko_qf_matches (only when includeQFBonus is true)
+    let maxQFBonusScore = 0;
+    if (includeQFBonus) {
+      const oddvarKoQF = oddvarData.ko_qf_matches
+        ? (typeof oddvarData.ko_qf_matches === 'string' ? JSON.parse(oddvarData.ko_qf_matches) : oddvarData.ko_qf_matches)
+        : null;
+      if (Array.isArray(oddvarKoQF)) {
+        const uniqueTeams = new Set<string>();
+        for (const m of oddvarKoQF) {
+          if (m.home_team) uniqueTeams.add(m.home_team);
+          if (m.away_team) uniqueTeams.add(m.away_team);
+        }
+        maxQFBonusScore = uniqueTeams.size * 4;
+      }
+    }
+
+    const totalMaxPossibleScore = maxGroupStageScore + maxR32Score + maxR16Score + maxR16BonusScore + maxQFScore + maxQFBonusScore + maxSFScore + maxFinalScore + maxThirdPlaceScore + maxWinnerScore;
 
     const rankings: UserRanking[] = [];
 
@@ -331,7 +353,33 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
         }
       }
 
-      const totalScore = groupStageScore + r32Score + advancementScore + r16Score + r16BonusScore + qfScore + sfScore + finalScore + thirdPlaceScore + winnerScore;
+      // QF bonus: award 4 points for each team in user's ko_qf_matches that appears in oddvar's ko_qf_matches
+      let qfBonusScore = 0;
+      if (includeQFBonus) {
+        const userKoQF = user.ko_qf_matches ? (typeof user.ko_qf_matches === 'string' ? JSON.parse(user.ko_qf_matches) : user.ko_qf_matches) : null;
+        const oddvarKoQF = oddvarData.ko_qf_matches ? (typeof oddvarData.ko_qf_matches === 'string' ? JSON.parse(oddvarData.ko_qf_matches) : oddvarData.ko_qf_matches) : null;
+
+        if (userKoQF && oddvarKoQF) {
+          // Collect all teams from oddvar's qf matches
+          const oddvarTeams = new Set<string>();
+          for (const m of oddvarKoQF as any[]) {
+            if (m.home_team) oddvarTeams.add(m.home_team);
+            if (m.away_team) oddvarTeams.add(m.away_team);
+          }
+
+          // Award 4 points for each user team that appears in oddvar's teams
+          for (const m of userKoQF as any[]) {
+            if (m.home_team && oddvarTeams.has(m.home_team)) {
+              qfBonusScore += 4;
+            }
+            if (m.away_team && oddvarTeams.has(m.away_team)) {
+              qfBonusScore += 4;
+            }
+          }
+        }
+      }
+
+      const totalScore = groupStageScore + r32Score + advancementScore + r16Score + r16BonusScore + qfScore + qfBonusScore + sfScore + finalScore + thirdPlaceScore + winnerScore;
 
       // Check if ko_winner team is active
       let koWinnerActive: boolean | null = null;
@@ -360,6 +408,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
         r16Score,
         r16BonusScore,
         qfScore,
+        qfBonusScore,
         sfScore,
         finalScore,
         thirdPlaceScore,

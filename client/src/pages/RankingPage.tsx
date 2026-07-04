@@ -12,6 +12,7 @@ interface UserRanking {
   r16Score: number;
   r16BonusScore: number;
   qfScore: number;
+  qfBonusScore: number;
   sfScore: number;
   finalScore: number;
   thirdPlaceScore: number;
@@ -31,7 +32,7 @@ export default function RankingPage() {
   const [oddvarR32TeamCount, setOddvarR32TeamCount] = useState(0);
   const [groupStageMaxPoints, setGroupStageMaxPoints] = useState(0);
   const [oddvarR16TeamCount, setOddvarR16TeamCount] = useState(0);
-  const [qfMaxPoints, setQFMaxPoints] = useState(0);
+  const [oddvarQFTeamCount, setOddvarQFTeamCount] = useState(0);
 
   useEffect(() => {
     // Log event when page loads
@@ -73,6 +74,22 @@ export default function RankingPage() {
       .catch(() => {
         // Silently fail
       });
+
+    // Fetch oddvar's qf teams to calculate max qf bonus points
+    get<any>('/knockout/oddvar-qf')
+      .then((data) => {
+        if (data.qfPredictions) {
+          const teams = new Set<string>();
+          for (const m of data.qfPredictions) {
+            if (m.home_team && m.home_team !== '?') teams.add(m.home_team);
+            if (m.away_team && m.away_team !== '?') teams.add(m.away_team);
+          }
+          setOddvarQFTeamCount(teams.size);
+        }
+      })
+      .catch(() => {
+        // Silently fail
+      });
   }, []);
 
   useEffect(() => {
@@ -95,16 +112,14 @@ export default function RankingPage() {
     // When showing options that need additional data, fetch it
     const fetchData = async () => {
       try {
-        const data = await get<{ rankings: UserRanking[]; maxMatchesWithResults: number; groupStageMaxPoints: number; qfMaxPoints: number }>(url);
+        const data = await get<{ rankings: UserRanking[]; maxMatchesWithResults: number; groupStageMaxPoints: number }>(url);
         setRankings(data.rankings);
         setMaxMatchesWithResults(data.maxMatchesWithResults);
-        setQFMaxPoints(data.qfMaxPoints);
 
         // If showing options that need group stage max, fetch group-only ranking
         if (cutoffMatchNumber === '' || cutoffMatchNumber === 'all+r32' || cutoffMatchNumber === 'all+r32+r16' || cutoffMatchNumber === 'qf+r16+r32+group' || cutoffMatchNumber === 'all') {
-          const groupData = await get<{ groupStageMaxPoints: number; qfMaxPoints: number }>('/ranking');
+          const groupData = await get<{ groupStageMaxPoints: number }>('/ranking');
           setGroupStageMaxPoints(groupData.groupStageMaxPoints);
-          setQFMaxPoints(groupData.qfMaxPoints);
         } else {
           setGroupStageMaxPoints(data.groupStageMaxPoints);
         }
@@ -127,11 +142,12 @@ export default function RankingPage() {
       return `${groupStageMaxPoints}`;
     }
     if ((cutoffMatchNumber === 'all' || cutoffMatchNumber === 'qf+r16+r32+group') && rankings.length > 0 && groupStageMaxPoints > 0) {
-      // Display group stage max + r32 advancement max + r16 bonus max + QF max
+      // Display group stage max + r32 advancement max + r16 bonus max + QF bonus max
       const r32AdvancementMax = oddvarR32TeamCount * 2;
       const r16BonusMax = oddvarR16TeamCount * 3;
-      const total = groupStageMaxPoints + r32AdvancementMax + r16BonusMax + qfMaxPoints;
-      return `${groupStageMaxPoints}+${r32AdvancementMax}+${r16BonusMax}+${qfMaxPoints}=${total}`;
+      const qfBonusMax = oddvarQFTeamCount * 4;
+      const total = groupStageMaxPoints + r32AdvancementMax + r16BonusMax + qfBonusMax;
+      return `${groupStageMaxPoints}+${r32AdvancementMax}+${r16BonusMax}+${qfBonusMax}=${total}`;
     }
     if (cutoffMatchNumber === 'all+r32+r16' && rankings.length > 0 && groupStageMaxPoints > 0) {
       // Display group stage max + r32 advancement max + r16 bonus max
@@ -227,7 +243,9 @@ export default function RankingPage() {
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>
                       {(cutoffMatchNumber === 'all' || cutoffMatchNumber === 'all+r32+r16' || cutoffMatchNumber === 'qf+r16+r32+group') ? user.r16Score + user.r16BonusScore : user.r16Score}
                     </td>
-                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.qfScore}</td>
+                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>
+                      {(cutoffMatchNumber === 'all' || cutoffMatchNumber === 'qf+r16+r32+group') ? user.qfScore + user.qfBonusScore : user.qfScore}
+                    </td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.sfScore}</td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.finalScore}</td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.thirdPlaceScore}</td>
