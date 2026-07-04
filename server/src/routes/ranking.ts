@@ -38,14 +38,24 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
     let cutoff: number | null = null;
     let includeKnockout = false;
     let includeR16Bonus = false;
+    let includeQFAndBelow = false;
 
-    if (cutoffParam === 'all+r32+r16') {
+    if (cutoffParam === 'all') {
+      cutoff = null;
+      includeKnockout = true;
+      includeR16Bonus = true;
+    } else if (cutoffParam === 'all+r32+r16') {
       cutoff = null;
       includeKnockout = true;
       includeR16Bonus = true;
     } else if (cutoffParam === 'all+r32' || cutoffParam === 'all r32') {
       cutoff = null;
       includeKnockout = true;
+    } else if (cutoffParam === 'qf+r16+r32+group') {
+      cutoff = null;
+      includeKnockout = true;
+      includeR16Bonus = true;
+      includeQFAndBelow = true;
     } else if (cutoffParam) {
       const parsed = parseInt(cutoffParam);
       cutoff = !isNaN(parsed) ? parsed : null;
@@ -119,33 +129,35 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       }
     }
 
-    // Count QF predictions
-    for (let i = 25; i <= 28; i++) {
-      if (oddvarData[`ko${i}`]) {
-        maxQFScore += 4;
+    // Count QF predictions (exclude if includeQFAndBelow is true)
+    if (!includeQFAndBelow) {
+      for (let i = 25; i <= 28; i++) {
+        if (oddvarData[`ko${i}`]) {
+          maxQFScore += 4;
+        }
       }
-    }
 
-    // Count SF predictions
-    for (let i = 29; i <= 30; i++) {
-      if (oddvarData[`ko${i}`]) {
-        maxSFScore += 5;
+      // Count SF predictions
+      for (let i = 29; i <= 30; i++) {
+        if (oddvarData[`ko${i}`]) {
+          maxSFScore += 5;
+        }
       }
-    }
 
-    // Final
-    if (oddvarData.ko31) {
-      maxFinalScore = 6;
-    }
+      // Final
+      if (oddvarData.ko31) {
+        maxFinalScore = 6;
+      }
 
-    // Third place
-    if (oddvarData.ko32) {
-      maxThirdPlaceScore = 7;
-    }
+      // Third place
+      if (oddvarData.ko32) {
+        maxThirdPlaceScore = 7;
+      }
 
-    // Winner
-    if (oddvarData.ko_winner) {
-      maxWinnerScore = 15;
+      // Winner
+      if (oddvarData.ko_winner) {
+        maxWinnerScore = 15;
+      }
     }
 
     // R16 Bonus: 3 points per unique team in oddvar's ko_r16_matches (only when includeR16Bonus is true)
@@ -220,37 +232,40 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
           }
         }
 
-        // QF: 4 points per correct prediction (4 matches, ko25-ko28)
-        for (let i = 25; i <= 28; i++) {
-          const userPred = user[`ko${i}`];
-          const correctPred = oddvarData[`ko${i}`];
-          if (userPred && correctPred && userPred === correctPred) {
-            qfScore += 4;
+        // QF, SF, Final, Third place, Winner: only calculate if NOT including QF and below
+        if (!includeQFAndBelow) {
+          // QF: 4 points per correct prediction (4 matches, ko25-ko28)
+          for (let i = 25; i <= 28; i++) {
+            const userPred = user[`ko${i}`];
+            const correctPred = oddvarData[`ko${i}`];
+            if (userPred && correctPred && userPred === correctPred) {
+              qfScore += 4;
+            }
           }
-        }
 
-        // SF: 5 points per correct prediction (2 matches, ko29-ko30)
-        for (let i = 29; i <= 30; i++) {
-          const userPred = user[`ko${i}`];
-          const correctPred = oddvarData[`ko${i}`];
-          if (userPred && correctPred && userPred === correctPred) {
-            sfScore += 5;
+          // SF: 5 points per correct prediction (2 matches, ko29-ko30)
+          for (let i = 29; i <= 30; i++) {
+            const userPred = user[`ko${i}`];
+            const correctPred = oddvarData[`ko${i}`];
+            if (userPred && correctPred && userPred === correctPred) {
+              sfScore += 5;
+            }
           }
-        }
 
-        // Final: 6 points (ko31)
-        if (user.ko31 && oddvarData.ko31 && user.ko31 === oddvarData.ko31) {
-          finalScore = 6;
-        }
+          // Final: 6 points (ko31)
+          if (user.ko31 && oddvarData.ko31 && user.ko31 === oddvarData.ko31) {
+            finalScore = 6;
+          }
 
-        // Third place: 7 points (ko32)
-        if (user.ko32 && oddvarData.ko32 && user.ko32 === oddvarData.ko32) {
-          thirdPlaceScore = 7;
-        }
+          // Third place: 7 points (ko32)
+          if (user.ko32 && oddvarData.ko32 && user.ko32 === oddvarData.ko32) {
+            thirdPlaceScore = 7;
+          }
 
-        // Winner: 15 points (based on ko_winner)
-        if (user.ko_winner && oddvarData.ko_winner && user.ko_winner === oddvarData.ko_winner) {
-          winnerScore = 15;
+          // Winner: 15 points (based on ko_winner)
+          if (user.ko_winner && oddvarData.ko_winner && user.ko_winner === oddvarData.ko_winner) {
+            winnerScore = 15;
+          }
         }
       }
 

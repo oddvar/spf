@@ -27,7 +27,7 @@ export default function RankingPage() {
   const [maxMatchesWithResults, setMaxMatchesWithResults] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [cutoffMatchNumber, setCutoffMatchNumber] = useState<number | null | string>('all+r32+r16');
+  const [cutoffMatchNumber, setCutoffMatchNumber] = useState<number | null | string>('all');
   const [oddvarR32TeamCount, setOddvarR32TeamCount] = useState(0);
   const [groupStageMaxPoints, setGroupStageMaxPoints] = useState(0);
   const [oddvarR16TeamCount, setOddvarR16TeamCount] = useState(0);
@@ -98,8 +98,8 @@ export default function RankingPage() {
         setRankings(data.rankings);
         setMaxMatchesWithResults(data.maxMatchesWithResults);
 
-        // If showing "all + r32" or "all + r32 + r16", fetch group-only ranking to get the group stage max
-        if (cutoffMatchNumber === 'all+r32' || cutoffMatchNumber === 'all+r32+r16') {
+        // If showing options that need group stage max, fetch group-only ranking
+        if (cutoffMatchNumber === 'all+r32' || cutoffMatchNumber === 'all+r32+r16' || cutoffMatchNumber === 'qf+r16+r32+group') {
           const groupData = await get<{ groupStageMaxPoints: number }>('/ranking');
           setGroupStageMaxPoints(groupData.groupStageMaxPoints);
         } else {
@@ -132,6 +132,13 @@ export default function RankingPage() {
       const total = groupStageMaxPoints + r32AdvancementMax;
       return `${groupStageMaxPoints}+${r32AdvancementMax}=${total}`;
     }
+    if (cutoffMatchNumber === 'qf+r16+r32+group' && rankings.length > 0 && groupStageMaxPoints > 0) {
+      // Display group stage max + r32 advancement max + r16 bonus max
+      const r32AdvancementMax = oddvarR32TeamCount * 2;
+      const r16BonusMax = oddvarR16TeamCount * 3;
+      const total = groupStageMaxPoints + r32AdvancementMax + r16BonusMax;
+      return `${groupStageMaxPoints}+${r32AdvancementMax}+${r16BonusMax}=${total}`;
+    }
     return maxPossibleScore.toString();
   };
 
@@ -145,15 +152,19 @@ export default function RankingPage() {
           onChange={(e) => {
             const val = e.target.value;
             if (val === '') setCutoffMatchNumber(null);
+            else if (val === 'all') setCutoffMatchNumber('all');
             else if (val === 'all+r32') setCutoffMatchNumber('all+r32');
             else if (val === 'all+r32+r16') setCutoffMatchNumber('all+r32+r16');
+            else if (val === 'qf+r16+r32+group') setCutoffMatchNumber('qf+r16+r32+group');
             else setCutoffMatchNumber(parseInt(val));
           }}
           style={{ padding: '0.5rem', fontSize: '1rem' }}
         >
+          <option value="all">all</option>
           <option value="">only group</option>
           <option value="all+r32">r32 and all group</option>
           <option value="all+r32+r16">r16, r32 and all group</option>
+          <option value="qf+r16+r32+group">qf, r16, r32 and group</option>
           {Array.from({ length: maxMatchesWithResults }, (_, i) => i + 1).map((matchNum) => (
             <option key={matchNum} value={matchNum}>
               {matchNum}
@@ -207,7 +218,7 @@ export default function RankingPage() {
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.groupStageScore}</td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.r32Score + user.advancementScore}</td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>
-                      {cutoffMatchNumber === 'all+r32+r16' ? user.r16Score + user.r16BonusScore : user.r16Score}
+                      {(cutoffMatchNumber === 'all+r32+r16' || cutoffMatchNumber === 'qf+r16+r32+group') ? user.r16Score + user.r16BonusScore : user.r16Score}
                     </td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.qfScore}</td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.sfScore}</td>
