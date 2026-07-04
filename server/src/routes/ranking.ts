@@ -30,6 +30,7 @@ interface RankingResponse {
   rankings: UserRanking[];
   maxMatchesWithResults: number;
   groupStageMaxPoints: number;
+  qfMaxPoints: number;
 }
 
 router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
@@ -56,6 +57,10 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       includeKnockout = true;
       includeR16Bonus = true;
       includeQFAndBelow = true;
+    } else if (cutoffParam === '') {
+      // Group only
+      cutoff = 72;
+      includeKnockout = false;
     } else if (cutoffParam) {
       const parsed = parseInt(cutoffParam);
       cutoff = !isNaN(parsed) ? parsed : null;
@@ -115,17 +120,19 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       }
     }
 
-    // Count R32 predictions
-    for (let i = 1; i <= 16; i++) {
-      if (oddvarData[`ko${i}`]) {
-        maxR32Score += 2;
+    // Count R32 predictions (only if including knockout)
+    if (includeKnockout) {
+      for (let i = 1; i <= 16; i++) {
+        if (oddvarData[`ko${i}`]) {
+          maxR32Score += 2;
+        }
       }
-    }
 
-    // Count R16 predictions
-    for (let i = 17; i <= 24; i++) {
-      if (oddvarData[`ko${i}`]) {
-        maxR16Score += 3;
+      // Count R16 predictions
+      for (let i = 17; i <= 24; i++) {
+        if (oddvarData[`ko${i}`]) {
+          maxR16Score += 3;
+        }
       }
     }
 
@@ -381,6 +388,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       rankings,
       maxMatchesWithResults,
       groupStageMaxPoints: maxGroupStageScore,
+      qfMaxPoints: maxQFScore,
     });
   } catch (err) {
     console.error('Error fetching ranking:', err);

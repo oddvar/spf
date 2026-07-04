@@ -31,6 +31,7 @@ export default function RankingPage() {
   const [oddvarR32TeamCount, setOddvarR32TeamCount] = useState(0);
   const [groupStageMaxPoints, setGroupStageMaxPoints] = useState(0);
   const [oddvarR16TeamCount, setOddvarR16TeamCount] = useState(0);
+  const [qfMaxPoints, setQFMaxPoints] = useState(0);
 
   useEffect(() => {
     // Log event when page loads
@@ -91,17 +92,19 @@ export default function RankingPage() {
     }
     setLoading(true);
 
-    // When showing "all + r32" or "all + r32 + r16", also fetch group-only to get group stage max
+    // When showing options that need additional data, fetch it
     const fetchData = async () => {
       try {
-        const data = await get<{ rankings: UserRanking[]; maxMatchesWithResults: number; groupStageMaxPoints: number }>(url);
+        const data = await get<{ rankings: UserRanking[]; maxMatchesWithResults: number; groupStageMaxPoints: number; qfMaxPoints: number }>(url);
         setRankings(data.rankings);
         setMaxMatchesWithResults(data.maxMatchesWithResults);
+        setQFMaxPoints(data.qfMaxPoints);
 
         // If showing options that need group stage max, fetch group-only ranking
-        if (cutoffMatchNumber === 'all+r32' || cutoffMatchNumber === 'all+r32+r16' || cutoffMatchNumber === 'qf+r16+r32+group') {
-          const groupData = await get<{ groupStageMaxPoints: number }>('/ranking');
+        if (cutoffMatchNumber === '' || cutoffMatchNumber === 'all+r32' || cutoffMatchNumber === 'all+r32+r16' || cutoffMatchNumber === 'qf+r16+r32+group' || cutoffMatchNumber === 'all') {
+          const groupData = await get<{ groupStageMaxPoints: number; qfMaxPoints: number }>('/ranking');
           setGroupStageMaxPoints(groupData.groupStageMaxPoints);
+          setQFMaxPoints(groupData.qfMaxPoints);
         } else {
           setGroupStageMaxPoints(data.groupStageMaxPoints);
         }
@@ -119,6 +122,17 @@ export default function RankingPage() {
   const maxPossibleScore = rankings.length > 0 ? rankings[0].maxPossibleScore : 0;
 
   const getMaxPointsDisplay = () => {
+    if (cutoffMatchNumber === '' && groupStageMaxPoints > 0) {
+      // Group only
+      return `${groupStageMaxPoints}`;
+    }
+    if ((cutoffMatchNumber === 'all' || cutoffMatchNumber === 'qf+r16+r32+group') && rankings.length > 0 && groupStageMaxPoints > 0) {
+      // Display group stage max + r32 advancement max + r16 bonus max + QF max
+      const r32AdvancementMax = oddvarR32TeamCount * 2;
+      const r16BonusMax = oddvarR16TeamCount * 3;
+      const total = groupStageMaxPoints + r32AdvancementMax + r16BonusMax + qfMaxPoints;
+      return `${groupStageMaxPoints}+${r32AdvancementMax}+${r16BonusMax}+${qfMaxPoints}=${total}`;
+    }
     if (cutoffMatchNumber === 'all+r32+r16' && rankings.length > 0 && groupStageMaxPoints > 0) {
       // Display group stage max + r32 advancement max + r16 bonus max
       const r32AdvancementMax = oddvarR32TeamCount * 2;
@@ -131,13 +145,6 @@ export default function RankingPage() {
       const r32AdvancementMax = oddvarR32TeamCount * 2;
       const total = groupStageMaxPoints + r32AdvancementMax;
       return `${groupStageMaxPoints}+${r32AdvancementMax}=${total}`;
-    }
-    if (cutoffMatchNumber === 'qf+r16+r32+group' && rankings.length > 0 && groupStageMaxPoints > 0) {
-      // Display group stage max + r32 advancement max + r16 bonus max
-      const r32AdvancementMax = oddvarR32TeamCount * 2;
-      const r16BonusMax = oddvarR16TeamCount * 3;
-      const total = groupStageMaxPoints + r32AdvancementMax + r16BonusMax;
-      return `${groupStageMaxPoints}+${r32AdvancementMax}+${r16BonusMax}=${total}`;
     }
     return maxPossibleScore.toString();
   };
@@ -161,10 +168,10 @@ export default function RankingPage() {
           style={{ padding: '0.5rem', fontSize: '1rem' }}
         >
           <option value="all">all</option>
-          <option value="">only group</option>
-          <option value="all+r32">r32 and all group</option>
-          <option value="all+r32+r16">r16, r32 and all group</option>
-          <option value="qf+r16+r32+group">qf, r16, r32 and group</option>
+          <option value="">group</option>
+          <option value="all+r32">group and r32</option>
+          <option value="all+r32+r16">group, r32 and r16</option>
+          <option value="qf+r16+r32+group">group, r32, r16 and qf</option>
           {Array.from({ length: maxMatchesWithResults }, (_, i) => i + 1).map((matchNum) => (
             <option key={matchNum} value={matchNum}>
               {matchNum}
