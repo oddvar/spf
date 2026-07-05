@@ -300,7 +300,7 @@ async function updateKnockoutNextStage(
         [normalizeTeamName(apiMatch.homeTeam.shortName)],
       );
       if ((homeTeamRows as any[]).length > 0) {
-        winningTeamName = (homeTeamRows as any[])[0].name.toLowerCase();
+        winningTeamName = (homeTeamRows as any[])[0].name;
       }
       losingTeamNormalized = normalizeTeamName(apiMatch.awayTeam.shortName);
     } else if (result === 'A') {
@@ -310,7 +310,7 @@ async function updateKnockoutNextStage(
         [normalizeTeamName(apiMatch.awayTeam.shortName)],
       );
       if ((awayTeamRows as any[]).length > 0) {
-        winningTeamName = (awayTeamRows as any[])[0].name.toLowerCase();
+        winningTeamName = (awayTeamRows as any[])[0].name;
       }
       losingTeamNormalized = normalizeTeamName(apiMatch.homeTeam.shortName);
     } else if (result === 'D') {

@@ -181,14 +181,14 @@ router.get('/today', requireAuth, async (req: AuthRequest, res: Response) => {
           resultFromOddvar = (resultRows as any[])[0].result || null;
         }
 
-        // For R32 and R16 matches, show users based on their next-stage match predictions
-        if (match.stage === 'r32' || match.stage === 'r16') {
+        // For R32, R16, and QF matches, show users based on their next-stage match predictions
+        if (match.stage === 'r32' || match.stage === 'r16' || match.stage === 'qf') {
           const currentResolvedHome = resolvedMatches[match.ko_number]?.home_team;
           const currentResolvedAway = resolvedMatches[match.ko_number]?.away_team;
 
           if (currentResolvedHome && currentResolvedAway) {
-            // For R32: fetch users' R16 matches; for R16: fetch users' QF matches
-            const column = match.stage === 'r32' ? 'ko_r16_matches' : 'ko_qf_matches';
+            // For R32: fetch users' R16 matches; for R16: fetch users' QF matches; for QF: fetch users' SF matches
+            const column = match.stage === 'r32' ? 'ko_r16_matches' : match.stage === 'r16' ? 'ko_qf_matches' : 'ko_sf_matches';
             const [usersWithNextMatches] = await pool.execute(
               `SELECT id, first_name, last_name, ${column} FROM users
                WHERE active = 1 AND email != ? AND ${column} IS NOT NULL`,
