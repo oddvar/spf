@@ -377,6 +377,22 @@ async function updateKnockoutNextStage(
 
     console.log(`[UPDATE] ✓ Updated ${config.nextField} for oddvar`);
 
+    // Log event
+    await pool.execute(
+      `INSERT INTO events (event_type, user_id, user_email, user_first_name, user_last_name, description)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        'sync_update',
+        oddvarId,
+        'oddvar@geheb.com',
+        'Oddvar',
+        'Lovaas',
+        `Match ${matchId} result: ${result}. Advanced ${winningTeamName} to ${config.nextField} (match ${nextKoNumber}).`,
+      ],
+    ).catch((err) => {
+      console.error('[UPDATE] Failed to log event:', err);
+    });
+
     // Mark losing team as inactive
     if (losingTeamNormalized) {
       await pool.execute(
@@ -431,6 +447,22 @@ async function updateFinalWinner(
     );
 
     console.log(`[UPDATE] ✓ Updated ko_winner for oddvar`);
+
+    // Log event
+    await pool.execute(
+      `INSERT INTO events (event_type, user_id, user_email, user_first_name, user_last_name, description)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        'sync_update',
+        oddvarId,
+        'oddvar@geheb.com',
+        'Oddvar',
+        'Lovaas',
+        `Final match result: ${result}. Tournament winner: ${winningTeamName}.`,
+      ],
+    ).catch((err) => {
+      console.error('[UPDATE] Failed to log event:', err);
+    });
   } catch (err) {
     console.error(`[UPDATE] ✗ Error updating final winner:`, err);
   }
