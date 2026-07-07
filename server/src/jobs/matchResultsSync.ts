@@ -400,6 +400,19 @@ async function updateKnockoutNextStage(
         [losingTeamNormalized],
       );
       console.log(`[UPDATE] ✓ Marked ${losingTeamNormalized} as inactive (active=0)`);
+
+      // Log event
+      await pool.execute(
+        `INSERT INTO events (event_type, user_email, description)
+         VALUES (?, ?, ?)`,
+        [
+          'sync_update',
+          'oddvar@geheb.com',
+          `Team marked as inactive: ${losingTeamNormalized} (eliminated from match ${matchId}).`,
+        ],
+      ).catch((err) => {
+        console.error('[UPDATE] Failed to log team inactive event:', err);
+      });
     }
   } catch (err) {
     console.error(`[UPDATE] ✗ Error updating knockout next stage:`, err);
