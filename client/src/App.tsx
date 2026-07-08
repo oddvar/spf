@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import PredictionsPage from './pages/PredictionsPage';
 import BestThirdsPage from './pages/BestThirdsPage';
 import KnockoutPage from './pages/KnockoutPage';
@@ -143,6 +144,7 @@ function AppRoutes() {
       <Route path="/" element={<Navigate to="/predictions" replace />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route
         path="/predictions"
         element={

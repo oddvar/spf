@@ -27,6 +27,11 @@ function validate(email: string, password: string): FieldErrors {
   return errors;
 }
 
+function validateEmail(email: string): string | undefined {
+  if (!email.trim()) return 'Email is required';
+  return undefined;
+}
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -37,6 +42,12 @@ export default function LoginPage() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
+
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotEmailError, setForgotEmailError] = useState('');
+  const [forgotMessage, setForgotMessage] = useState('');
+  const [forgotPending, setForgotPending] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -68,6 +79,34 @@ export default function LoginPage() {
       }
     } finally {
       setIsPending(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const error = validateEmail(forgotEmail);
+    if (error) {
+      setForgotEmailError(error);
+      return;
+    }
+
+    setForgotPending(true);
+    setForgotMessage('');
+
+    try {
+      await post('/auth/forgot-password', { email: forgotEmail.trim() });
+      setForgotMessage('If an account with that email exists, a password reset link has been sent.');
+      setForgotEmail('');
+      setForgotEmailError('');
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setForgotMessage('If an account with that email exists, a password reset link has been sent.');
+      } else {
+        setForgotMessage('If an account with that email exists, a password reset link has been sent.');
+      }
+    } finally {
+      setForgotPending(false);
     }
   };
 
@@ -136,6 +175,140 @@ export default function LoginPage() {
       <p className="auth-footer">
         Don&apos;t have an account? <Link to="/register">Create one</Link>
       </p>
+
+      <p style={{ textAlign: 'center', marginTop: '1rem' }}>
+        <button
+          type="button"
+          onClick={() => setShowForgotPassword(true)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--accent)',
+            cursor: 'pointer',
+            textDecoration: 'underline',
+            fontSize: '0.9rem',
+          }}
+        >
+          Forgot password?
+        </button>
+      </p>
+
+      {showForgotPassword && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            backgroundColor: 'var(--bg-primary)',
+            borderRadius: '8px',
+            padding: '2rem',
+            maxWidth: '400px',
+            width: '90%',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+          }}>
+            <h2 style={{ marginTop: 0 }}>Reset password</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+              Enter your email address and we'll send you a link to reset your password.
+            </p>
+
+            <form onSubmit={handleForgotPassword}>
+              {!forgotMessage && (
+                <>
+                  <div className={`field${forgotEmailError ? ' field--error' : ''}`}>
+                    <label htmlFor="forgot-email">Email</label>
+                    <input
+                      id="forgot-email"
+                      name="email"
+                      type="email"
+                      value={forgotEmail}
+                      autoComplete="email"
+                      onChange={(e) => {
+                        setForgotEmail(e.target.value);
+                        setForgotEmailError('');
+                      }}
+                      aria-describedby={forgotEmailError ? 'forgot-email-error' : undefined}
+                      aria-invalid={!!forgotEmailError}
+                    />
+                    {forgotEmailError && (
+                      <span id="forgot-email-error" className="field-error">
+                        {forgotEmailError}
+                      </span>
+                    )}
+                  </div>
+
+                  <button type="submit" disabled={forgotPending} className="btn-primary" style={{ marginTop: '1rem' }}>
+                    {forgotPending ? 'Sending…' : 'Send reset link'}
+                  </button>
+                </>
+              )}
+
+              {forgotMessage && (
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem', textAlign: 'center' }}>
+                  {forgotMessage}
+                </p>
+              )}
+
+              {!forgotMessage && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setForgotEmail('');
+                    setForgotEmailError('');
+                    setForgotMessage('');
+                  }}
+                  style={{
+                    width: '100%',
+                    marginTop: '0.5rem',
+                    padding: '0.75rem',
+                    background: 'none',
+                    border: '1px solid var(--border)',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  Back
+                </button>
+              )}
+
+              {forgotMessage && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setForgotEmail('');
+                    setForgotEmailError('');
+                    setForgotMessage('');
+                  }}
+                  style={{
+                    width: '100%',
+                    marginTop: '1rem',
+                    padding: '0.75rem',
+                    background: 'none',
+                    border: '1px solid var(--border)',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  Back to login
+                </button>
+              )}
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
