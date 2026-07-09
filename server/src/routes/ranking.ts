@@ -18,6 +18,7 @@ interface UserRanking {
   qfScore: number;
   qfBonusScore: number;
   sfScore: number;
+  sfBonusScore: number;
   finalScore: number;
   thirdPlaceScore: number;
   winnerScore: number;
@@ -41,6 +42,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
     let includeKnockout = false;
     let includeR16Bonus = false;
     let includeQFBonus = false;
+    let includeSFBonus = false;
     let includeQFAndBelow = false;
 
     if (cutoffParam === 'all') {
@@ -48,23 +50,34 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       includeKnockout = true;
       includeR16Bonus = true;
       includeQFBonus = true;
+      includeSFBonus = true;
       includeQFAndBelow = false;
     } else if (cutoffParam === 'all+r32+r16') {
       cutoff = null;
       includeKnockout = true;
       includeR16Bonus = true;
       includeQFBonus = false;
+      includeSFBonus = false;
       includeQFAndBelow = true;
     } else if (cutoffParam === 'all+r32' || cutoffParam === 'all r32') {
       cutoff = null;
       includeKnockout = true;
       includeQFBonus = false;
+      includeSFBonus = false;
       includeQFAndBelow = true;
     } else if (cutoffParam === 'qf+r16+r32+group') {
       cutoff = null;
       includeKnockout = true;
       includeR16Bonus = true;
       includeQFBonus = true;
+      includeSFBonus = false;
+      includeQFAndBelow = true;
+    } else if (cutoffParam === 'sf+qf+r16+r32+group') {
+      cutoff = null;
+      includeKnockout = true;
+      includeR16Bonus = true;
+      includeQFBonus = true;
+      includeSFBonus = true;
       includeQFAndBelow = true;
     } else if (cutoffParam === '') {
       // Group only
@@ -207,7 +220,23 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       }
     }
 
-    const totalMaxPossibleScore = maxGroupStageScore + maxR32Score + maxR16Score + maxR16BonusScore + maxQFScore + maxQFBonusScore + maxSFScore + maxFinalScore + maxThirdPlaceScore + maxWinnerScore;
+    // SF Bonus: 5 points per unique team in oddvar's ko_sf_matches (only when includeSFBonus is true)
+    let maxSFBonusScore = 0;
+    if (includeSFBonus) {
+      const oddvarKoSF = oddvarData.ko_sf_matches
+        ? (typeof oddvarData.ko_sf_matches === 'string' ? JSON.parse(oddvarData.ko_sf_matches) : oddvarData.ko_sf_matches)
+        : null;
+      if (Array.isArray(oddvarKoSF)) {
+        const uniqueTeams = new Set<string>();
+        for (const m of oddvarKoSF) {
+          if (m.home_team) uniqueTeams.add(m.home_team);
+          if (m.away_team) uniqueTeams.add(m.away_team);
+        }
+        maxSFBonusScore = uniqueTeams.size * 5;
+      }
+    }
+
+    const totalMaxPossibleScore = maxGroupStageScore + maxR32Score + maxR16Score + maxR16BonusScore + maxQFScore + maxQFBonusScore + maxSFScore + maxSFBonusScore + maxFinalScore + maxThirdPlaceScore + maxWinnerScore;
 
     const rankings: UserRanking[] = [];
 
@@ -379,7 +408,33 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
         }
       }
 
-      const totalScore = groupStageScore + r32Score + advancementScore + r16Score + r16BonusScore + qfScore + qfBonusScore + sfScore + finalScore + thirdPlaceScore + winnerScore;
+      // SF bonus: award 5 points for each team in user's ko_sf_matches that appears in oddvar's ko_sf_matches
+      let sfBonusScore = 0;
+      if (includeSFBonus) {
+        const userKoSF = user.ko_sf_matches ? (typeof user.ko_sf_matches === 'string' ? JSON.parse(user.ko_sf_matches) : user.ko_sf_matches) : null;
+        const oddvarKoSF = oddvarData.ko_sf_matches ? (typeof oddvarData.ko_sf_matches === 'string' ? JSON.parse(oddvarData.ko_sf_matches) : oddvarData.ko_sf_matches) : null;
+
+        if (userKoSF && oddvarKoSF) {
+          // Collect all teams from oddvar's sf matches
+          const oddvarTeams = new Set<string>();
+          for (const m of oddvarKoSF as any[]) {
+            if (m.home_team) oddvarTeams.add(m.home_team);
+            if (m.away_team) oddvarTeams.add(m.away_team);
+          }
+
+          // Award 5 points for each user team that appears in oddvar's teams
+          for (const m of userKoSF as any[]) {
+            if (m.home_team && oddvarTeams.has(m.home_team)) {
+              sfBonusScore += 5;
+            }
+            if (m.away_team && oddvarTeams.has(m.away_team)) {
+              sfBonusScore += 5;
+            }
+          }
+        }
+      }
+
+      const totalScore = groupStageScore + r32Score + advancementScore + r16Score + r16BonusScore + qfScore + qfBonusScore + sfScore + sfBonusScore + finalScore + thirdPlaceScore + winnerScore;
 
       // Check if ko_winner team is active
       let koWinnerActive: boolean | null = null;
@@ -410,6 +465,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
         qfScore,
         qfBonusScore,
         sfScore,
+        sfBonusScore,
         finalScore,
         thirdPlaceScore,
         winnerScore,
