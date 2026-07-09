@@ -96,14 +96,14 @@ export default function LoginPage() {
 
     try {
       await post('/auth/forgot-password', { email: forgotEmail.trim() });
-      setForgotMessage('If an account with that email exists, a password reset link has been sent.');
+      setForgotMessage('Password reset is not yet integrated with an email service — the administrator will send you the link manually.');
       setForgotEmail('');
       setForgotEmailError('');
     } catch (err) {
       if (err instanceof ApiError) {
-        setForgotMessage('If an account with that email exists, a password reset link has been sent.');
+        setForgotMessage('Password reset is not yet integrated with an email service — the administrator will send you the link manually.');
       } else {
-        setForgotMessage('If an account with that email exists, a password reset link has been sent.');
+        setForgotMessage('Password reset is not yet integrated with an email service — the administrator will send you the link manually.');
       }
     } finally {
       setForgotPending(false);

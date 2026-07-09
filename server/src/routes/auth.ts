@@ -187,11 +187,41 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
         [tokenId, user.id, token, expiresAt],
       );
 
-      // TODO: Send email with reset link
-      // const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
-      // await sendEmail(email.trim(), 'Password Reset', `Click here to reset your password: ${resetLink}`);
+      // Log event with token (for admin to use)
+      try {
+        const resetUrl = `${process.env.CLIENT_URL || 'https://localhost:5173'}/reset-password?token=${token}`;
+        await pool.execute(
+          `INSERT INTO events (event_type, user_id, user_email, description)
+           VALUES (?, ?, ?, ?)`,
+          [
+            'password_reset_requested',
+            null,
+            email.trim(),
+            `Password reset requested. Reset URL: ${resetUrl}`,
+          ],
+        );
+        console.log(`[AUTH] Password reset event logged for ${email.trim()}`);
+      } catch (logErr) {
+        console.error(`[AUTH] Failed to log password reset event for ${email.trim()}:`, logErr);
+      }
 
       console.log(`[AUTH] Password reset token generated for user ${user.id} (${email.trim()})`);
+    } else {
+      // Log event even if user not found (for audit trail)
+      try {
+        await pool.execute(
+          `INSERT INTO events (event_type, user_id, user_email, description)
+           VALUES (?, ?, ?, ?)`,
+          [
+            'password_reset_requested',
+            null,
+            email.trim(),
+            `Password reset requested for non-existent email`,
+          ],
+        );
+      } catch (logErr) {
+        console.error(`[AUTH] Failed to log password reset event for ${email.trim()}:`, logErr);
+      }
     }
 
     // For security, always return the same message
