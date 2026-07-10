@@ -181,14 +181,14 @@ router.get('/today', requireAuth, async (req: AuthRequest, res: Response) => {
           resultFromOddvar = (resultRows as any[])[0].result || null;
         }
 
-        // For R32, R16, and QF matches, show users based on their next-stage match predictions
-        if (match.stage === 'r32' || match.stage === 'r16' || match.stage === 'qf') {
+        // For R32, R16, QF, and SF matches, show users based on their next-stage match predictions
+        if (match.stage === 'r32' || match.stage === 'r16' || match.stage === 'qf' || match.stage === 'sf') {
           const currentResolvedHome = resolvedMatches[match.ko_number]?.home_team;
           const currentResolvedAway = resolvedMatches[match.ko_number]?.away_team;
 
           if (currentResolvedHome && currentResolvedAway) {
-            // For R32: fetch users' R16 matches; for R16: fetch users' QF matches; for QF: fetch users' SF matches
-            const column = match.stage === 'r32' ? 'ko_r16_matches' : match.stage === 'r16' ? 'ko_qf_matches' : 'ko_sf_matches';
+            // For R32: fetch users' R16 matches; for R16: fetch users' QF matches; for QF: fetch users' SF matches; for SF: fetch users' Final match
+            const column = match.stage === 'r32' ? 'ko_r16_matches' : match.stage === 'r16' ? 'ko_qf_matches' : match.stage === 'qf' ? 'ko_sf_matches' : 'ko_f_match';
             const [usersWithNextMatches] = await pool.execute(
               `SELECT id, first_name, last_name, ${column} FROM users
                WHERE active = 1 AND email != ? AND ${column} IS NOT NULL`,
@@ -200,9 +200,14 @@ router.get('/today', requireAuth, async (req: AuthRequest, res: Response) => {
 
             for (const user of usersWithNextMatches as any[]) {
               try {
-                const nextData = typeof user[column] === 'string'
+                let nextData = typeof user[column] === 'string'
                   ? JSON.parse(user[column])
                   : user[column];
+
+                // Convert single object to array for consistent handling
+                if (nextData && !Array.isArray(nextData)) {
+                  nextData = [nextData];
+                }
 
                 if (!Array.isArray(nextData)) continue;
 

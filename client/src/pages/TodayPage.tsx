@@ -242,94 +242,108 @@ export default function TodayPage() {
                 const awayTeam = match.resolvedAwayTeam || match.away_team;
                 return homeTeam === '?' && awayTeam === '?';
               })() ? null : match.nextStageInfo ? (
-                // Knockout match: show users who have the advancing team in next stage
-                <div>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.75rem', color: 'var(--text-secondary)' }}>
-                    {!match.resolvedHomeTeam || !match.resolvedAwayTeam ? 'Users with advancing team in next stage (where teams are decided):' : 'Users with advancing team in next stage:'}
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                // Knockout match: show users who have the advancing team in next stage (only if team is known)
+                (() => {
+                  const homeTeam = match.resolvedHomeTeam || match.home_team;
+                  const awayTeam = match.resolvedAwayTeam || match.away_team;
+                  const homeTeamKnown = homeTeam && homeTeam !== '?';
+                  const awayTeamKnown = awayTeam && awayTeam !== '?';
+
+                  if (!homeTeamKnown && !awayTeamKnown) {
+                    return <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Teams not yet decided</p>;
+                  }
+
+                  return (
                     <div>
-                      <div
-                        style={{
-                          fontSize: '0.75rem',
-                          fontWeight: 'bold',
-                          textTransform: 'uppercase',
-                          color: 'var(--text-secondary)',
-                          marginBottom: '0.5rem',
-                          paddingBottom: '0.5rem',
-                          borderBottom: '2px solid var(--border)',
-                        }}
-                      >
-                        Home {!match.resolvedHomeTeam && '(not yet decided)'} ({match.nextStageInfo.nextStagePredictions.home.length})
+                      <div style={{ fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.75rem', color: 'var(--text-secondary)' }}>
+                        {(!homeTeamKnown || !awayTeamKnown) ? 'Users with advancing team in next stage (where teams are decided):' : 'Users with advancing team in next stage:'}
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-                        {!match.resolvedHomeTeam ? (
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Team not yet decided</span>
-                        ) : match.nextStageInfo.nextStagePredictions.home.length === 0 ? (
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>—</span>
-                        ) : (
-                          [...match.nextStageInfo.nextStagePredictions.home]
-                            .sort((a, b) => a.last_name.localeCompare(b.last_name))
-                            .map((pred) => {
-                              const isLoggedInUser = pred.first_name === localStorage.getItem('firstName') &&
-                                                     pred.last_name === localStorage.getItem('lastName');
-                              return (
-                                <div
-                                  key={pred.user_id}
-                                  style={{
-                                    fontSize: '0.75rem',
-                                    fontWeight: isLoggedInUser ? 'bold' : 'normal',
-                                  }}
-                                >
-                                  {pred.first_name} {pred.last_name}
-                                </div>
-                              );
-                            })
-                        )}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div>
+                          <div
+                            style={{
+                              fontSize: '0.75rem',
+                              fontWeight: 'bold',
+                              textTransform: 'uppercase',
+                              color: 'var(--text-secondary)',
+                              marginBottom: '0.5rem',
+                              paddingBottom: '0.5rem',
+                              borderBottom: '2px solid var(--border)',
+                            }}
+                          >
+                            Home {!homeTeamKnown && '(not yet decided)'} ({homeTeamKnown ? match.nextStageInfo.nextStagePredictions.home.length : 0})
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                            {!homeTeamKnown ? (
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Team not yet decided</span>
+                            ) : match.nextStageInfo.nextStagePredictions.home.length === 0 ? (
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>—</span>
+                            ) : (
+                              [...match.nextStageInfo.nextStagePredictions.home]
+                                .sort((a, b) => a.last_name.localeCompare(b.last_name))
+                                .map((pred) => {
+                                  const isLoggedInUser = pred.first_name === localStorage.getItem('firstName') &&
+                                                         pred.last_name === localStorage.getItem('lastName');
+                                  return (
+                                    <div
+                                      key={pred.user_id}
+                                      style={{
+                                        fontSize: '0.75rem',
+                                        fontWeight: isLoggedInUser ? 'bold' : 'normal',
+                                      }}
+                                    >
+                                      {pred.first_name} {pred.last_name}
+                                    </div>
+                                  );
+                                })
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <div
+                            style={{
+                              fontSize: '0.75rem',
+                              fontWeight: 'bold',
+                              textTransform: 'uppercase',
+                              color: 'var(--text-secondary)',
+                              marginBottom: '0.5rem',
+                              paddingBottom: '0.5rem',
+                              borderBottom: '2px solid var(--border)',
+                            }}
+                          >
+                            Away {!awayTeamKnown && '(not yet decided)'} ({awayTeamKnown ? match.nextStageInfo.nextStagePredictions.away.length : 0})
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                            {!awayTeamKnown ? (
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Team not yet decided</span>
+                            ) : match.nextStageInfo.nextStagePredictions.away.length === 0 ? (
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>—</span>
+                            ) : (
+                              [...match.nextStageInfo.nextStagePredictions.away]
+                                .sort((a, b) => a.last_name.localeCompare(b.last_name))
+                                .map((pred) => {
+                                  const isLoggedInUser = pred.first_name === localStorage.getItem('firstName') &&
+                                                         pred.last_name === localStorage.getItem('lastName');
+                                  return (
+                                    <div
+                                      key={pred.user_id}
+                                      style={{
+                                        fontSize: '0.75rem',
+                                        fontWeight: isLoggedInUser ? 'bold' : 'normal',
+                                      }}
+                                    >
+                                      {pred.first_name} {pred.last_name}
+                                    </div>
+                                  );
+                                })
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <div
-                        style={{
-                          fontSize: '0.75rem',
-                          fontWeight: 'bold',
-                          textTransform: 'uppercase',
-                          color: 'var(--text-secondary)',
-                          marginBottom: '0.5rem',
-                          paddingBottom: '0.5rem',
-                          borderBottom: '2px solid var(--border)',
-                        }}
-                      >
-                        Away {!match.resolvedAwayTeam && '(not yet decided)'} ({match.nextStageInfo.nextStagePredictions.away.length})
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-                        {!match.resolvedAwayTeam ? (
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Team not yet decided</span>
-                        ) : match.nextStageInfo.nextStagePredictions.away.length === 0 ? (
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>—</span>
-                        ) : (
-                          [...match.nextStageInfo.nextStagePredictions.away]
-                            .sort((a, b) => a.last_name.localeCompare(b.last_name))
-                            .map((pred) => {
-                              const isLoggedInUser = pred.first_name === localStorage.getItem('firstName') &&
-                                                     pred.last_name === localStorage.getItem('lastName');
-                              return (
-                                <div
-                                  key={pred.user_id}
-                                  style={{
-                                    fontSize: '0.75rem',
-                                    fontWeight: isLoggedInUser ? 'bold' : 'normal',
-                                  }}
-                                >
-                                  {pred.first_name} {pred.last_name}
-                                </div>
-                              );
-                            })
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })()
+
               ) : match.ko_number && (!match.resolvedHomeTeam || !match.resolvedAwayTeam) ? (
                 // Knockout match with unresolved teams: don't show predictions
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>The teams in this match have not yet been decided</p>
