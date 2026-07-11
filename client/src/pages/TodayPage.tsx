@@ -217,7 +217,7 @@ export default function TodayPage() {
                                         key={pred.user_id}
                                         className={isGoldUser ? 'user-gold' : ''}
                                         style={{
-                                          fontSize: '0.75rem',
+                                          fontSize: isLoggedInUser ? 'calc(0.75rem + 1px)' : '0.75rem',
                                           fontWeight: isLoggedInUser ? 'bold' : 'normal',
                                         }}
                                       >

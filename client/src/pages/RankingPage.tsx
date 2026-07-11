@@ -273,7 +273,7 @@ export default function RankingPage() {
                 return (
                   <tr key={user.user_id} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '0.5rem', textAlign: 'left' }}>{rank}</td>
-                    <td className={isGoldUser ? 'user-gold' : ''} style={{ padding: '0.5rem', textAlign: 'left', fontWeight: isLoggedInUser ? 'bold' : 'normal' }}>
+                    <td className={isGoldUser ? 'user-gold' : ''} style={{ padding: '0.5rem', textAlign: 'left', fontWeight: isLoggedInUser ? 'bold' : 'normal', fontSize: isLoggedInUser ? '0.95rem' : '0.9rem' }}>
                       {user.first_name} {user.last_name}{user.paymentStatus === 'NO' ? '*' : ''}
                     </td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.groupStageScore}</td>
