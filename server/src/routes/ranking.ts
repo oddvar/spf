@@ -79,6 +79,13 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       includeQFBonus = true;
       includeSFBonus = true;
       includeQFAndBelow = true;
+    } else if (cutoffParam === 'f+sf+qf+r16+r32+group') {
+      cutoff = null;
+      includeKnockout = true;
+      includeR16Bonus = true;
+      includeQFBonus = true;
+      includeSFBonus = true;
+      includeQFAndBelow = false;
     } else if (cutoffParam === '') {
       // Group only
       cutoff = 72;

@@ -135,7 +135,7 @@ export default function RankingPage() {
         setMaxMatchesWithResults(data.maxMatchesWithResults);
 
         // If showing options that need group stage max, fetch group-only ranking
-        if (cutoffMatchNumber === '' || cutoffMatchNumber === 'all+r32' || cutoffMatchNumber === 'all+r32+r16' || cutoffMatchNumber === 'qf+r16+r32+group' || cutoffMatchNumber === 'sf+qf+r16+r32+group' || cutoffMatchNumber === 'all') {
+        if (cutoffMatchNumber === '' || cutoffMatchNumber === 'all+r32' || cutoffMatchNumber === 'all+r32+r16' || cutoffMatchNumber === 'qf+r16+r32+group' || cutoffMatchNumber === 'sf+qf+r16+r32+group' || cutoffMatchNumber === 'f+sf+qf+r16+r32+group' || cutoffMatchNumber === 'all') {
           const groupData = await get<{ groupStageMaxPoints: number }>('/ranking');
           setGroupStageMaxPoints(groupData.groupStageMaxPoints);
         } else {
@@ -185,6 +185,18 @@ export default function RankingPage() {
       const total = groupStageMaxPoints + r32AdvancementMax + r16BonusMax + qfBonusMax + sfBonusMax;
       return `${groupStageMaxPoints}+${r32AdvancementMax}+${r16BonusMax}+${qfBonusMax}+${sfBonusMax}=${total}`;
     }
+    if (cutoffMatchNumber === 'f+sf+qf+r16+r32+group' && rankings.length > 0 && groupStageMaxPoints > 0) {
+      // Display group stage max + r32 advancement max + r16 bonus max + QF bonus max + SF bonus max + Final + 3rd place + Winner
+      const r32AdvancementMax = oddvarR32TeamCount * 2;
+      const r16BonusMax = oddvarR16TeamCount * 3;
+      const qfBonusMax = oddvarQFTeamCount * 4;
+      const sfBonusMax = oddvarSFTeamCount * 5;
+      const finalMax = 6;
+      const thirdPlaceMax = 7;
+      const winnerMax = 15;
+      const total = groupStageMaxPoints + r32AdvancementMax + r16BonusMax + qfBonusMax + sfBonusMax + finalMax + thirdPlaceMax + winnerMax;
+      return `${groupStageMaxPoints}+${r32AdvancementMax}+${r16BonusMax}+${qfBonusMax}+${sfBonusMax}+${finalMax}+${thirdPlaceMax}+${winnerMax}=${total}`;
+    }
     if (cutoffMatchNumber === 'all+r32+r16' && rankings.length > 0 && groupStageMaxPoints > 0) {
       // Display group stage max + r32 advancement max + r16 bonus max
       const r32AdvancementMax = oddvarR32TeamCount * 2;
@@ -216,6 +228,7 @@ export default function RankingPage() {
             else if (val === 'all+r32+r16') setCutoffMatchNumber('all+r32+r16');
             else if (val === 'qf+r16+r32+group') setCutoffMatchNumber('qf+r16+r32+group');
             else if (val === 'sf+qf+r16+r32+group') setCutoffMatchNumber('sf+qf+r16+r32+group');
+            else if (val === 'f+sf+qf+r16+r32+group') setCutoffMatchNumber('f+sf+qf+r16+r32+group');
             else setCutoffMatchNumber(parseInt(val));
           }}
           style={{ padding: '0.5rem', fontSize: '1rem' }}
@@ -226,6 +239,7 @@ export default function RankingPage() {
           <option value="all+r32+r16">group, r32 and r16</option>
           <option value="qf+r16+r32+group">group, r32, r16 and qf</option>
           <option value="sf+qf+r16+r32+group">group, r32, r16, qf and sf</option>
+          <option value="f+sf+qf+r16+r32+group">group, r32, r16, qf, sf and final</option>
           {Array.from({ length: maxMatchesWithResults }, (_, i) => i + 1).map((matchNum) => (
             <option key={matchNum} value={matchNum}>
               {matchNum}
