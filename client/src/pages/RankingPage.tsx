@@ -160,13 +160,16 @@ export default function RankingPage() {
       return `${groupStageMaxPoints}`;
     }
     if (cutoffMatchNumber === 'all' && rankings.length > 0 && groupStageMaxPoints > 0) {
-      // Display group stage max + r32 advancement max + r16 bonus max + QF bonus max + SF bonus max
+      // Display group stage max + r32 advancement max + r16 bonus max + QF bonus max + SF bonus max + Final + 3rd place + Winner
       const r32AdvancementMax = oddvarR32TeamCount * 2;
       const r16BonusMax = oddvarR16TeamCount * 3;
       const qfBonusMax = oddvarQFTeamCount * 4;
       const sfBonusMax = oddvarSFTeamCount * 5;
-      const total = groupStageMaxPoints + r32AdvancementMax + r16BonusMax + qfBonusMax + sfBonusMax;
-      return `${groupStageMaxPoints}+${r32AdvancementMax}+${r16BonusMax}+${qfBonusMax}+${sfBonusMax}=${total}`;
+      const finalMax = 6;
+      const thirdPlaceMax = 7;
+      const winnerMax = 15;
+      const total = groupStageMaxPoints + r32AdvancementMax + r16BonusMax + qfBonusMax + sfBonusMax + finalMax + thirdPlaceMax + winnerMax;
+      return `${groupStageMaxPoints}+${r32AdvancementMax}+${r16BonusMax}+${qfBonusMax}+${sfBonusMax}+${finalMax}+${thirdPlaceMax}+${winnerMax}=${total}`;
     }
     if (cutoffMatchNumber === 'qf+r16+r32+group' && rankings.length > 0 && groupStageMaxPoints > 0) {
       // Display group stage max + r32 advancement max + r16 bonus max + QF bonus max
