@@ -311,13 +311,13 @@ export default function RankingPage() {
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.groupStageScore}</td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.r32Score + user.advancementScore}</td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>
-                      {(cutoffMatchNumber === 'all' || cutoffMatchNumber === 'all+r32+r16' || cutoffMatchNumber === 'qf+r16+r32+group' || cutoffMatchNumber === 'sf+qf+r16+r32+group') ? user.r16Score + user.r16BonusScore : user.r16Score}
+                      {(cutoffMatchNumber === 'all' || cutoffMatchNumber === 'all+r32+r16' || cutoffMatchNumber === 'qf+r16+r32+group' || cutoffMatchNumber === 'sf+qf+r16+r32+group' || cutoffMatchNumber === 'f+sf+qf+r16+r32+group') ? user.r16Score + user.r16BonusScore : user.r16Score}
                     </td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>
-                      {(cutoffMatchNumber === 'all' || cutoffMatchNumber === 'qf+r16+r32+group' || cutoffMatchNumber === 'sf+qf+r16+r32+group') ? user.qfScore + user.qfBonusScore : user.qfScore}
+                      {(cutoffMatchNumber === 'all' || cutoffMatchNumber === 'qf+r16+r32+group' || cutoffMatchNumber === 'sf+qf+r16+r32+group' || cutoffMatchNumber === 'f+sf+qf+r16+r32+group') ? user.qfScore + user.qfBonusScore : user.qfScore}
                     </td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>
-                      {(cutoffMatchNumber === 'all' || cutoffMatchNumber === 'sf+qf+r16+r32+group') ? user.sfScore + user.sfBonusScore : user.sfScore}
+                      {(cutoffMatchNumber === 'all' || cutoffMatchNumber === 'sf+qf+r16+r32+group' || cutoffMatchNumber === 'f+sf+qf+r16+r32+group') ? user.sfScore + user.sfBonusScore : user.sfScore}
                     </td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>
                       {(cutoffMatchNumber === 'all' || cutoffMatchNumber === 'f+sf+qf+r16+r32+group') ? user.finalScore + user.fBonusScore : user.finalScore}
