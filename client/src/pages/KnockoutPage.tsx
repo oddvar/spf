@@ -887,7 +887,7 @@ export default function KnockoutPage() {
                   onClick={tpEnabled ? () => predictThird('H') : undefined}
                 >
                   <span className="bracket-team-name" style={{
-                    textDecoration: (inactiveTeams.has(home.toLowerCase()) && !oddvarFTeams.has(home.toLowerCase())) ? 'line-through' : 'none',
+                    textDecoration: (inactiveTeams.has(home.toLowerCase()) && (!oddvarSFTeams.has(home.toLowerCase()) || oddvarFTeams.has(home.toLowerCase()))) ? 'line-through' : 'none',
                     fontWeight: oddvarFTeams.has(home.toLowerCase()) ? 'bold' : 'normal',
                     fontStyle: 'normal',
                     fontSize: oddvarFTeams.has(home.toLowerCase()) ? '1.1em' : '1em',
@@ -899,7 +899,7 @@ export default function KnockoutPage() {
                   onClick={tpEnabled ? () => predictThird('A') : undefined}
                 >
                   <span className="bracket-team-name" style={{
-                    textDecoration: (inactiveTeams.has(away.toLowerCase()) && !oddvarFTeams.has(away.toLowerCase())) ? 'line-through' : 'none',
+                    textDecoration: (inactiveTeams.has(away.toLowerCase()) && (!oddvarSFTeams.has(away.toLowerCase()) || oddvarFTeams.has(away.toLowerCase()))) ? 'line-through' : 'none',
                     fontWeight: oddvarFTeams.has(away.toLowerCase()) ? 'bold' : 'normal',
                     fontStyle: 'normal',
                     fontSize: oddvarFTeams.has(away.toLowerCase()) ? '1.1em' : '1em',
