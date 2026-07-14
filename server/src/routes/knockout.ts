@@ -357,6 +357,30 @@ router.get('/knockout/oddvar-sf', async (_req, res: Response) => {
   }
 });
 
+router.get('/knockout/oddvar-final', async (_req, res: Response) => {
+  try {
+    const [userRows] = await pool.execute(
+      'SELECT ko_f_match FROM users WHERE email = ?',
+      ['oddvar@geheb.com'],
+    );
+
+    const user = (userRows as any[])[0];
+    if (!user) {
+      res.status(404).json({ error: 'Oddvar user not found' });
+      return;
+    }
+
+    const finalMatch = user.ko_f_match
+      ? (typeof user.ko_f_match === 'string' ? JSON.parse(user.ko_f_match) : user.ko_f_match)
+      : null;
+
+    res.json({ finalMatch });
+  } catch (err) {
+    console.error('Error fetching oddvar final match:', err);
+    res.status(500).json({ error: 'Failed to fetch oddvar final match' });
+  }
+});
+
 router.get('/knockout/oddvar-f', async (_req, res: Response) => {
   try {
     const [userRows] = await pool.execute(

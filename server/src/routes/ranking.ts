@@ -20,6 +20,7 @@ interface UserRanking {
   sfScore: number;
   sfBonusScore: number;
   finalScore: number;
+  fBonusScore: number;
   thirdPlaceScore: number;
   winnerScore: number;
   totalScore: number;
@@ -43,6 +44,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
     let includeR16Bonus = false;
     let includeQFBonus = false;
     let includeSFBonus = false;
+    let includeFBonus = false;
     let includeQFAndBelow = false;
 
     if (cutoffParam === 'all') {
@@ -51,6 +53,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       includeR16Bonus = true;
       includeQFBonus = true;
       includeSFBonus = true;
+      includeFBonus = true;
       includeQFAndBelow = false;
     } else if (cutoffParam === 'all+r32+r16') {
       cutoff = null;
@@ -58,12 +61,14 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       includeR16Bonus = true;
       includeQFBonus = false;
       includeSFBonus = false;
+      includeFBonus = false;
       includeQFAndBelow = true;
     } else if (cutoffParam === 'all+r32' || cutoffParam === 'all r32') {
       cutoff = null;
       includeKnockout = true;
       includeQFBonus = false;
       includeSFBonus = false;
+      includeFBonus = false;
       includeQFAndBelow = true;
     } else if (cutoffParam === 'qf+r16+r32+group') {
       cutoff = null;
@@ -71,6 +76,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       includeR16Bonus = true;
       includeQFBonus = true;
       includeSFBonus = false;
+      includeFBonus = false;
       includeQFAndBelow = true;
     } else if (cutoffParam === 'sf+qf+r16+r32+group') {
       cutoff = null;
@@ -78,6 +84,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       includeR16Bonus = true;
       includeQFBonus = true;
       includeSFBonus = true;
+      includeFBonus = false;
       includeQFAndBelow = true;
     } else if (cutoffParam === 'f+sf+qf+r16+r32+group') {
       cutoff = null;
@@ -85,6 +92,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       includeR16Bonus = true;
       includeQFBonus = true;
       includeSFBonus = true;
+      includeFBonus = true;
       includeQFAndBelow = false;
     } else if (cutoffParam === '') {
       // Group only
@@ -243,7 +251,27 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       }
     }
 
-    const totalMaxPossibleScore = maxGroupStageScore + maxR32Score + maxR16Score + maxR16BonusScore + maxQFScore + maxQFBonusScore + maxSFScore + maxSFBonusScore + maxFinalScore + maxThirdPlaceScore + maxWinnerScore;
+    // Final Bonus: 6 points per unique team in oddvar's ko_f_match (only when includeFBonus is true)
+    let maxFBonusScore = 0;
+    if (includeFBonus) {
+      let oddvarKoF = oddvarData.ko_f_match
+        ? (typeof oddvarData.ko_f_match === 'string' ? JSON.parse(oddvarData.ko_f_match) : oddvarData.ko_f_match)
+        : null;
+      // Convert single object to array for consistent handling
+      if (oddvarKoF && !Array.isArray(oddvarKoF)) {
+        oddvarKoF = [oddvarKoF];
+      }
+      if (Array.isArray(oddvarKoF)) {
+        const uniqueTeams = new Set<string>();
+        for (const m of oddvarKoF) {
+          if (m.home_team) uniqueTeams.add(m.home_team);
+          if (m.away_team) uniqueTeams.add(m.away_team);
+        }
+        maxFBonusScore = uniqueTeams.size * 6;
+      }
+    }
+
+    const totalMaxPossibleScore = maxGroupStageScore + maxR32Score + maxR16Score + maxR16BonusScore + maxQFScore + maxQFBonusScore + maxSFScore + maxSFBonusScore + maxFinalScore + maxFBonusScore + maxThirdPlaceScore + maxWinnerScore;
 
     const rankings: UserRanking[] = [];
 
@@ -441,7 +469,41 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
         }
       }
 
-      const totalScore = groupStageScore + r32Score + advancementScore + r16Score + r16BonusScore + qfScore + qfBonusScore + sfScore + sfBonusScore + finalScore + thirdPlaceScore + winnerScore;
+      // Final bonus: award 6 points for each team in user's ko_f_match that appears in oddvar's ko_f_match
+      let fBonusScore = 0;
+      if (includeFBonus) {
+        let userKoF = user.ko_f_match ? (typeof user.ko_f_match === 'string' ? JSON.parse(user.ko_f_match) : user.ko_f_match) : null;
+        let oddvarKoF = oddvarData.ko_f_match ? (typeof oddvarData.ko_f_match === 'string' ? JSON.parse(oddvarData.ko_f_match) : oddvarData.ko_f_match) : null;
+
+        // Convert single objects to arrays for consistent handling
+        if (userKoF && !Array.isArray(userKoF)) {
+          userKoF = [userKoF];
+        }
+        if (oddvarKoF && !Array.isArray(oddvarKoF)) {
+          oddvarKoF = [oddvarKoF];
+        }
+
+        if (userKoF && oddvarKoF) {
+          // Collect all teams from oddvar's final match
+          const oddvarTeams = new Set<string>();
+          for (const m of oddvarKoF as any[]) {
+            if (m.home_team) oddvarTeams.add(m.home_team);
+            if (m.away_team) oddvarTeams.add(m.away_team);
+          }
+
+          // Award 6 points for each user team that appears in oddvar's teams
+          for (const m of userKoF as any[]) {
+            if (m.home_team && oddvarTeams.has(m.home_team)) {
+              fBonusScore += 6;
+            }
+            if (m.away_team && oddvarTeams.has(m.away_team)) {
+              fBonusScore += 6;
+            }
+          }
+        }
+      }
+
+      const totalScore = groupStageScore + r32Score + advancementScore + r16Score + r16BonusScore + qfScore + qfBonusScore + sfScore + sfBonusScore + finalScore + fBonusScore + thirdPlaceScore + winnerScore;
 
       // Check if ko_winner team is active
       let koWinnerActive: boolean | null = null;
@@ -474,6 +536,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
         sfScore,
         sfBonusScore,
         finalScore,
+        fBonusScore,
         thirdPlaceScore,
         winnerScore,
         totalScore,

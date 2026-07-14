@@ -16,6 +16,7 @@ interface UserRanking {
   sfScore: number;
   sfBonusScore: number;
   finalScore: number;
+  fBonusScore: number;
   thirdPlaceScore: number;
   winnerScore: number;
   totalScore: number;
@@ -35,6 +36,7 @@ export default function RankingPage() {
   const [oddvarR16TeamCount, setOddvarR16TeamCount] = useState(0);
   const [oddvarQFTeamCount, setOddvarQFTeamCount] = useState(0);
   const [oddvarSFTeamCount, setOddvarSFTeamCount] = useState(0);
+  const [oddvarFinalTeamCount, setOddvarFinalTeamCount] = useState(0);
 
   useEffect(() => {
     // Log event when page loads
@@ -108,6 +110,23 @@ export default function RankingPage() {
       .catch(() => {
         // Silently fail
       });
+
+    // Fetch oddvar's final match teams to calculate max final bonus points
+    get<any>('/knockout/oddvar-final')
+      .then((data) => {
+        if (data.finalMatch) {
+          const teams = new Set<string>();
+          const finalMatch = Array.isArray(data.finalMatch) ? data.finalMatch[0] : data.finalMatch;
+          if (finalMatch) {
+            if (finalMatch.home_team && finalMatch.home_team !== '?') teams.add(finalMatch.home_team);
+            if (finalMatch.away_team && finalMatch.away_team !== '?') teams.add(finalMatch.away_team);
+          }
+          setOddvarFinalTeamCount(teams.size);
+        }
+      })
+      .catch(() => {
+        // Silently fail
+      });
   }, []);
 
   useEffect(() => {
@@ -160,16 +179,14 @@ export default function RankingPage() {
       return `${groupStageMaxPoints}`;
     }
     if (cutoffMatchNumber === 'all' && rankings.length > 0 && groupStageMaxPoints > 0) {
-      // Display group stage max + r32 advancement max + r16 bonus max + QF bonus max + SF bonus max + Final + 3rd place + Winner
+      // Display group stage max + advancement bonuses
       const r32AdvancementMax = oddvarR32TeamCount * 2;
       const r16BonusMax = oddvarR16TeamCount * 3;
       const qfBonusMax = oddvarQFTeamCount * 4;
       const sfBonusMax = oddvarSFTeamCount * 5;
-      const finalMax = 6;
-      const thirdPlaceMax = 7;
-      const winnerMax = 15;
-      const total = groupStageMaxPoints + r32AdvancementMax + r16BonusMax + qfBonusMax + sfBonusMax + finalMax + thirdPlaceMax + winnerMax;
-      return `${groupStageMaxPoints}+${r32AdvancementMax}+${r16BonusMax}+${qfBonusMax}+${sfBonusMax}+${finalMax}+${thirdPlaceMax}+${winnerMax}=${total}`;
+      const fBonusMax = oddvarFinalTeamCount * 6;
+      const total = groupStageMaxPoints + r32AdvancementMax + r16BonusMax + qfBonusMax + sfBonusMax + fBonusMax;
+      return `${groupStageMaxPoints}+${r32AdvancementMax}+${r16BonusMax}+${qfBonusMax}+${sfBonusMax}+${fBonusMax}=${total}`;
     }
     if (cutoffMatchNumber === 'qf+r16+r32+group' && rankings.length > 0 && groupStageMaxPoints > 0) {
       // Display group stage max + r32 advancement max + r16 bonus max + QF bonus max
@@ -189,16 +206,14 @@ export default function RankingPage() {
       return `${groupStageMaxPoints}+${r32AdvancementMax}+${r16BonusMax}+${qfBonusMax}+${sfBonusMax}=${total}`;
     }
     if (cutoffMatchNumber === 'f+sf+qf+r16+r32+group' && rankings.length > 0 && groupStageMaxPoints > 0) {
-      // Display group stage max + r32 advancement max + r16 bonus max + QF bonus max + SF bonus max + Final + 3rd place + Winner
+      // Display group stage max + advancement bonuses
       const r32AdvancementMax = oddvarR32TeamCount * 2;
       const r16BonusMax = oddvarR16TeamCount * 3;
       const qfBonusMax = oddvarQFTeamCount * 4;
       const sfBonusMax = oddvarSFTeamCount * 5;
-      const finalMax = 6;
-      const thirdPlaceMax = 7;
-      const winnerMax = 15;
-      const total = groupStageMaxPoints + r32AdvancementMax + r16BonusMax + qfBonusMax + sfBonusMax + finalMax + thirdPlaceMax + winnerMax;
-      return `${groupStageMaxPoints}+${r32AdvancementMax}+${r16BonusMax}+${qfBonusMax}+${sfBonusMax}+${finalMax}+${thirdPlaceMax}+${winnerMax}=${total}`;
+      const fBonusMax = oddvarFinalTeamCount * 6;
+      const total = groupStageMaxPoints + r32AdvancementMax + r16BonusMax + qfBonusMax + sfBonusMax + fBonusMax;
+      return `${groupStageMaxPoints}+${r32AdvancementMax}+${r16BonusMax}+${qfBonusMax}+${sfBonusMax}+${fBonusMax}=${total}`;
     }
     if (cutoffMatchNumber === 'all+r32+r16' && rankings.length > 0 && groupStageMaxPoints > 0) {
       // Display group stage max + r32 advancement max + r16 bonus max
@@ -304,7 +319,9 @@ export default function RankingPage() {
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>
                       {(cutoffMatchNumber === 'all' || cutoffMatchNumber === 'sf+qf+r16+r32+group') ? user.sfScore + user.sfBonusScore : user.sfScore}
                     </td>
-                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.finalScore}</td>
+                    <td style={{ padding: '0.5rem', textAlign: 'right' }}>
+                      {(cutoffMatchNumber === 'all' || cutoffMatchNumber === 'f+sf+qf+r16+r32+group') ? user.finalScore + user.fBonusScore : user.finalScore}
+                    </td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.thirdPlaceScore}</td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.winnerScore}</td>
                     <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold', color: 'var(--accent)' }}>
