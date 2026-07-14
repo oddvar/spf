@@ -196,7 +196,7 @@ export default function KnockoutPage() {
           const r16 = extractTeamsFromStage(oddvarKo.r16Predictions);
           const qf = extractTeamsFromStage(oddvarKo.qfPredictions);
           const sf = extractTeamsFromStage(oddvarKo.sfPredictions);
-          const f = extractTeamsFromStage([oddvarKo.fPrediction].filter(Boolean));
+          const f = extractTeamsFromStage(Array.isArray(oddvarKo.fPrediction) ? oddvarKo.fPrediction : (oddvarKo.fPrediction ? [oddvarKo.fPrediction] : []));
 
           setOddvarR32Teams(r32.teams);
           setOddvarR32MatchMap(r32.matchMap);
@@ -276,7 +276,7 @@ export default function KnockoutPage() {
           const r16 = extractTeamsFromStage(oddvarKo.r16Predictions);
           const qf = extractTeamsFromStage(oddvarKo.qfPredictions);
           const sf = extractTeamsFromStage(oddvarKo.sfPredictions);
-          const f = extractTeamsFromStage([oddvarKo.fPrediction].filter(Boolean));
+          const f = extractTeamsFromStage(Array.isArray(oddvarKo.fPrediction) ? oddvarKo.fPrediction : (oddvarKo.fPrediction ? [oddvarKo.fPrediction] : []));
 
           setOddvarR32Teams(r32.teams);
           setOddvarR32MatchMap(r32.matchMap);
