@@ -256,7 +256,7 @@ export default function TodayPage() {
                   return (
                     <div>
                       <div style={{ fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.75rem', color: 'var(--text-secondary)' }}>
-                        {(!homeTeamKnown || !awayTeamKnown) ? 'Users with advancing team in next stage (where teams are decided):' : 'Users with advancing team in next stage:'}
+                        {match.stage === 'f' || match.stage === 'tp' ? 'Users who have predicted this team as winner:' : ((!homeTeamKnown || !awayTeamKnown) ? 'Users with advancing team in next stage (where teams are decided):' : 'Users with advancing team in next stage:')}
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div>
@@ -351,7 +351,7 @@ export default function TodayPage() {
                 const homeTeam = match.resolvedHomeTeam || match.home_team;
                 const awayTeam = match.resolvedAwayTeam || match.away_team;
                 return homeTeam === '?' && awayTeam === '?';
-              })() ? null : match.stage === 'r16' ? null : (
+              })() ? null : match.stage === 'r16' || match.stage === 'f' || match.stage === 'tp' ? null : (
                 // Knockout match fallback: show in two columns (H, A)
                 <div>
                   <div style={{ fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.75rem', color: 'var(--text-secondary)' }}>

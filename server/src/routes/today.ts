@@ -87,12 +87,13 @@ router.get('/today', requireAuth, async (req: AuthRequest, res: Response) => {
       if (!jsonStr) return [];
       if (typeof jsonStr === 'string') {
         try {
-          return JSON.parse(jsonStr);
+          const parsed = JSON.parse(jsonStr);
+          return Array.isArray(parsed) ? parsed : [parsed];
         } catch {
           return [];
         }
       }
-      return Array.isArray(jsonStr) ? jsonStr : [];
+      return Array.isArray(jsonStr) ? jsonStr : [jsonStr];
     };
 
     const r32Matches = parseMatches(oddvarData.ko_r32_matches);
@@ -245,15 +246,132 @@ router.get('/today', requireAuth, async (req: AuthRequest, res: Response) => {
               };
             }
           }
+        } else if (match.stage === 'f') {
+          // For the final match, show users who predicted the correct winner
+          let finalHomeTeam: string | null = null;
+          let finalAwayTeam: string | null = null;
+
+          // Get final teams from oddvar's ko_f_match
+          if (Array.isArray(fMatch) && fMatch.length > 0) {
+            finalHomeTeam = fMatch[0]?.home_team || null;
+            finalAwayTeam = fMatch[0]?.away_team || null;
+          }
+
+          if (finalHomeTeam || finalAwayTeam) {
+            const [usersWithWinners] = await pool.execute(
+              `SELECT id, first_name, last_name, ko_winner FROM users
+               WHERE active = 1 AND email != ? AND ko_winner IS NOT NULL`,
+              ['oddvar@geheb.com'],
+            );
+
+            const homeUsers: Prediction[] = [];
+            const awayUsers: Prediction[] = [];
+
+            for (const user of usersWithWinners as any[]) {
+              const koWinner = user.ko_winner?.trim();
+              if (finalHomeTeam && koWinner === finalHomeTeam) {
+                homeUsers.push({
+                  user_id: user.id,
+                  first_name: user.first_name,
+                  last_name: user.last_name,
+                  prediction: null,
+                });
+              }
+              if (finalAwayTeam && koWinner === finalAwayTeam) {
+                awayUsers.push({
+                  user_id: user.id,
+                  first_name: user.first_name,
+                  last_name: user.last_name,
+                  prediction: null,
+                });
+              }
+            }
+
+            // Always set nextStageInfo for final match, even if empty
+            nextStageInfo = {
+              nextStagePredictions: {
+                home: homeUsers,
+                away: awayUsers,
+              },
+            };
+          }
+        } else if (match.stage === 'tp') {
+          // For the third place match, show users who predicted the correct teams
+          let thirdHomeTeam: string | null = null;
+          let thirdAwayTeam: string | null = null;
+
+          // Get third place teams from oddvar's ko_third_match
+          if (Array.isArray(tpMatch) && tpMatch.length > 0) {
+            thirdHomeTeam = tpMatch[0]?.home_team || null;
+            thirdAwayTeam = tpMatch[0]?.away_team || null;
+          }
+
+          if (thirdHomeTeam || thirdAwayTeam) {
+            const [usersWithPredictions] = await pool.execute(
+              `SELECT id, first_name, last_name, ko_third_place_winner FROM users
+               WHERE active = 1 AND email != ? AND ko_third_place_winner IS NOT NULL`,
+              ['oddvar@geheb.com'],
+            );
+
+            const homeUsers: Prediction[] = [];
+            const awayUsers: Prediction[] = [];
+
+            for (const user of usersWithPredictions as any[]) {
+              const thirdWinner = user.ko_third_place_winner?.trim();
+              if (thirdHomeTeam && thirdWinner === thirdHomeTeam) {
+                homeUsers.push({
+                  user_id: user.id,
+                  first_name: user.first_name,
+                  last_name: user.last_name,
+                  prediction: null,
+                });
+              }
+              if (thirdAwayTeam && thirdWinner === thirdAwayTeam) {
+                awayUsers.push({
+                  user_id: user.id,
+                  first_name: user.first_name,
+                  last_name: user.last_name,
+                  prediction: null,
+                });
+              }
+            }
+
+            // Always set nextStageInfo for third place match, even if empty
+            nextStageInfo = {
+              nextStagePredictions: {
+                home: homeUsers,
+                away: awayUsers,
+              },
+            };
+          }
         }
+      }
+
+      let displayHomeTeam = match.home_team;
+      let displayAwayTeam = match.away_team;
+
+      // For final matches, use resolved teams from oddvar's ko_f_match if available
+      if (match.stage === 'f' && Array.isArray(fMatch) && fMatch.length > 0) {
+        // Replace home team if available
+        if (fMatch[0]?.home_team) {
+          displayHomeTeam = fMatch[0].home_team;
+        }
+        // Replace away team if available
+        if (fMatch[0]?.away_team) {
+          displayAwayTeam = fMatch[0].away_team;
+        }
+      } else if (match.ko_number && resolvedMatches[match.ko_number]) {
+        // For other knockout matches, use resolved teams if available
+        displayHomeTeam = resolvedMatches[match.ko_number].home_team;
+        displayAwayTeam = resolvedMatches[match.ko_number].away_team;
       }
 
       const matchData: MatchWithPredictions = {
         id: match.id,
         match_number: match.match_number,
         ko_number: match.ko_number,
-        home_team: match.home_team,
-        away_team: match.away_team,
+        home_team: displayHomeTeam,
+        away_team: displayAwayTeam,
         match_datetime: (match.match_datetime as string).replace(' ', 'T') + 'Z',
         location: match.location,
         stage: match.stage,
