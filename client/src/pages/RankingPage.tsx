@@ -154,7 +154,7 @@ export default function RankingPage() {
         setMaxMatchesWithResults(data.maxMatchesWithResults);
 
         // If showing options that need group stage max, fetch group-only ranking
-        if (cutoffMatchNumber === '' || cutoffMatchNumber === 'all+r32' || cutoffMatchNumber === 'all+r32+r16' || cutoffMatchNumber === 'qf+r16+r32+group' || cutoffMatchNumber === 'sf+qf+r16+r32+group' || cutoffMatchNumber === 'f+sf+qf+r16+r32+group' || cutoffMatchNumber === 'all') {
+        if (cutoffMatchNumber === '' || cutoffMatchNumber === 'all+r32' || cutoffMatchNumber === 'all+r32+r16' || cutoffMatchNumber === 'qf+r16+r32+group' || cutoffMatchNumber === 'sf+qf+r16+r32+group' || cutoffMatchNumber === 'f+sf+qf+r16+r32+group' || cutoffMatchNumber === 'tp+f+sf+qf+r16+r32+group' || cutoffMatchNumber === 'all') {
           const groupData = await get<{ groupStageMaxPoints: number }>('/ranking');
           setGroupStageMaxPoints(groupData.groupStageMaxPoints);
         } else {
@@ -185,8 +185,8 @@ export default function RankingPage() {
       const qfBonusMax = oddvarQFTeamCount * 4;
       const sfBonusMax = oddvarSFTeamCount * 5;
       const fBonusMax = oddvarFinalTeamCount * 6;
-      const total = groupStageMaxPoints + r32AdvancementMax + r16BonusMax + qfBonusMax + sfBonusMax + fBonusMax;
-      return `${groupStageMaxPoints}+${r32AdvancementMax}+${r16BonusMax}+${qfBonusMax}+${sfBonusMax}+${fBonusMax}=${total}`;
+      const total = groupStageMaxPoints + r32AdvancementMax + r16BonusMax + qfBonusMax + sfBonusMax + fBonusMax + 0;
+      return `${groupStageMaxPoints}+${r32AdvancementMax}+${r16BonusMax}+${qfBonusMax}+${sfBonusMax}+${fBonusMax}+${0}=${total}`;
     }
     if (cutoffMatchNumber === 'qf+r16+r32+group' && rankings.length > 0 && groupStageMaxPoints > 0) {
       // Display group stage max + r32 advancement max + r16 bonus max + QF bonus max
@@ -206,7 +206,7 @@ export default function RankingPage() {
       return `${groupStageMaxPoints}+${r32AdvancementMax}+${r16BonusMax}+${qfBonusMax}+${sfBonusMax}=${total}`;
     }
     if (cutoffMatchNumber === 'f+sf+qf+r16+r32+group' && rankings.length > 0 && groupStageMaxPoints > 0) {
-      // Display group stage max + advancement bonuses
+      // Display group stage max + advancement bonuses (without third place)
       const r32AdvancementMax = oddvarR32TeamCount * 2;
       const r16BonusMax = oddvarR16TeamCount * 3;
       const qfBonusMax = oddvarQFTeamCount * 4;
@@ -214,6 +214,16 @@ export default function RankingPage() {
       const fBonusMax = oddvarFinalTeamCount * 6;
       const total = groupStageMaxPoints + r32AdvancementMax + r16BonusMax + qfBonusMax + sfBonusMax + fBonusMax;
       return `${groupStageMaxPoints}+${r32AdvancementMax}+${r16BonusMax}+${qfBonusMax}+${sfBonusMax}+${fBonusMax}=${total}`;
+    }
+    if (cutoffMatchNumber === 'tp+f+sf+qf+r16+r32+group' && rankings.length > 0 && groupStageMaxPoints > 0) {
+      // Display group stage max + advancement bonuses including third place
+      const r32AdvancementMax = oddvarR32TeamCount * 2;
+      const r16BonusMax = oddvarR16TeamCount * 3;
+      const qfBonusMax = oddvarQFTeamCount * 4;
+      const sfBonusMax = oddvarSFTeamCount * 5;
+      const fBonusMax = oddvarFinalTeamCount * 6;
+      const total = groupStageMaxPoints + r32AdvancementMax + r16BonusMax + qfBonusMax + sfBonusMax + fBonusMax + 0;
+      return `${groupStageMaxPoints}+${r32AdvancementMax}+${r16BonusMax}+${qfBonusMax}+${sfBonusMax}+${fBonusMax}+${0}=${total}`;
     }
     if (cutoffMatchNumber === 'all+r32+r16' && rankings.length > 0 && groupStageMaxPoints > 0) {
       // Display group stage max + r32 advancement max + r16 bonus max
@@ -247,6 +257,7 @@ export default function RankingPage() {
             else if (val === 'qf+r16+r32+group') setCutoffMatchNumber('qf+r16+r32+group');
             else if (val === 'sf+qf+r16+r32+group') setCutoffMatchNumber('sf+qf+r16+r32+group');
             else if (val === 'f+sf+qf+r16+r32+group') setCutoffMatchNumber('f+sf+qf+r16+r32+group');
+            else if (val === 'tp+f+sf+qf+r16+r32+group') setCutoffMatchNumber('tp+f+sf+qf+r16+r32+group');
             else setCutoffMatchNumber(parseInt(val));
           }}
           style={{ padding: '0.5rem', fontSize: '1rem' }}
@@ -258,6 +269,7 @@ export default function RankingPage() {
           <option value="qf+r16+r32+group">group, r32, r16 and qf</option>
           <option value="sf+qf+r16+r32+group">group, r32, r16, qf and sf</option>
           <option value="f+sf+qf+r16+r32+group">group, r32, r16, qf, sf and final</option>
+          <option value="tp+f+sf+qf+r16+r32+group">group, r32, r16, qf, sf, final and 3rd</option>
           {Array.from({ length: maxMatchesWithResults }, (_, i) => i + 1).map((matchNum) => (
             <option key={matchNum} value={matchNum}>
               {matchNum}
@@ -311,16 +323,16 @@ export default function RankingPage() {
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.groupStageScore}</td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.r32Score + user.advancementScore}</td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>
-                      {(cutoffMatchNumber === 'all' || cutoffMatchNumber === 'all+r32+r16' || cutoffMatchNumber === 'qf+r16+r32+group' || cutoffMatchNumber === 'sf+qf+r16+r32+group' || cutoffMatchNumber === 'f+sf+qf+r16+r32+group') ? user.r16Score + user.r16BonusScore : user.r16Score}
+                      {(cutoffMatchNumber === 'all' || cutoffMatchNumber === 'all+r32+r16' || cutoffMatchNumber === 'qf+r16+r32+group' || cutoffMatchNumber === 'sf+qf+r16+r32+group' || cutoffMatchNumber === 'f+sf+qf+r16+r32+group' || cutoffMatchNumber === 'tp+f+sf+qf+r16+r32+group') ? user.r16Score + user.r16BonusScore : user.r16Score}
                     </td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>
-                      {(cutoffMatchNumber === 'all' || cutoffMatchNumber === 'qf+r16+r32+group' || cutoffMatchNumber === 'sf+qf+r16+r32+group' || cutoffMatchNumber === 'f+sf+qf+r16+r32+group') ? user.qfScore + user.qfBonusScore : user.qfScore}
+                      {(cutoffMatchNumber === 'all' || cutoffMatchNumber === 'qf+r16+r32+group' || cutoffMatchNumber === 'sf+qf+r16+r32+group' || cutoffMatchNumber === 'f+sf+qf+r16+r32+group' || cutoffMatchNumber === 'tp+f+sf+qf+r16+r32+group') ? user.qfScore + user.qfBonusScore : user.qfScore}
                     </td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>
-                      {(cutoffMatchNumber === 'all' || cutoffMatchNumber === 'sf+qf+r16+r32+group' || cutoffMatchNumber === 'f+sf+qf+r16+r32+group') ? user.sfScore + user.sfBonusScore : user.sfScore}
+                      {(cutoffMatchNumber === 'all' || cutoffMatchNumber === 'sf+qf+r16+r32+group' || cutoffMatchNumber === 'f+sf+qf+r16+r32+group' || cutoffMatchNumber === 'tp+f+sf+qf+r16+r32+group') ? user.sfScore + user.sfBonusScore : user.sfScore}
                     </td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>
-                      {(cutoffMatchNumber === 'all' || cutoffMatchNumber === 'f+sf+qf+r16+r32+group') ? user.finalScore + user.fBonusScore : user.finalScore}
+                      {(cutoffMatchNumber === 'all' || cutoffMatchNumber === 'f+sf+qf+r16+r32+group' || cutoffMatchNumber === 'tp+f+sf+qf+r16+r32+group') ? user.finalScore + user.fBonusScore : user.finalScore}
                     </td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.thirdPlaceScore}</td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>{user.winnerScore}</td>
