@@ -45,6 +45,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
     let includeQFBonus = false;
     let includeSFBonus = false;
     let includeFBonus = false;
+    let includeTPScore = false;
     let includeQFAndBelow = false;
 
     if (cutoffParam === 'all') {
@@ -54,6 +55,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       includeQFBonus = true;
       includeSFBonus = true;
       includeFBonus = true;
+      includeTPScore = true;
       includeQFAndBelow = false;
     } else if (cutoffParam === 'all+r32+r16') {
       cutoff = null;
@@ -101,6 +103,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       includeQFBonus = true;
       includeSFBonus = true;
       includeFBonus = true;
+      includeTPScore = true;
       includeQFAndBelow = false;
     } else if (cutoffParam === '') {
       // Group only
@@ -123,7 +126,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
     // Get all active users except oddvar@geheb.com
     const predCols = Array.from({ length: MATCH_COUNT }, (_, i) => `match${i + 1}`).join(', ');
     const [userRows] = await pool.execute(
-      `SELECT id, first_name, last_name, payment_status, email, ko_winner, ko_r32_matches, ko_r16_matches, ko_qf_matches, ko_sf_matches, ko_f_match, ko_third_match, ${predCols} FROM users WHERE email != ? AND active = 1 ORDER BY first_name, last_name`,
+      `SELECT id, first_name, last_name, payment_status, email, ko_winner, ko_third_place_winner, ko_r32_matches, ko_r16_matches, ko_qf_matches, ko_sf_matches, ko_f_match, ko_third_match, ${predCols} FROM users WHERE email != ? AND active = 1 ORDER BY first_name, last_name`,
       ['oddvar@geheb.com'],
     );
 
@@ -202,7 +205,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       }
 
       // Third place
-      if (oddvarData.ko32) {
+      if (oddvarData.ko_third_place_winner && includeTPScore) {
         maxThirdPlaceScore = 7;
       }
 
@@ -279,7 +282,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       }
     }
 
-    const totalMaxPossibleScore = maxGroupStageScore + maxR32Score + maxR16Score + maxR16BonusScore + maxQFScore + maxQFBonusScore + maxSFScore + maxSFBonusScore + maxFinalScore + maxFBonusScore + maxThirdPlaceScore + maxWinnerScore;
+    const totalMaxPossibleScore = maxGroupStageScore + maxR32Score + maxR16Score + maxR16BonusScore + maxQFScore + maxQFBonusScore + maxSFScore + maxSFBonusScore + maxFinalScore + maxFBonusScore + (includeTPScore ? maxThirdPlaceScore : 0) + maxWinnerScore;
 
     const rankings: UserRanking[] = [];
 
@@ -361,8 +364,8 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
             finalScore = 6;
           }
 
-          // Third place: 7 points (ko32)
-          if (user.ko32 && oddvarData.ko32 && user.ko32 === oddvarData.ko32) {
+          // Third place: 7 points (ko_third_place_winner)
+          if (user.ko_third_place_winner && oddvarData.ko_third_place_winner && user.ko_third_place_winner === oddvarData.ko_third_place_winner) {
             thirdPlaceScore = 7;
           }
 
@@ -511,7 +514,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
         }
       }
 
-      const totalScore = groupStageScore + r32Score + advancementScore + r16Score + r16BonusScore + qfScore + qfBonusScore + sfScore + sfBonusScore + finalScore + fBonusScore + thirdPlaceScore + winnerScore;
+      const totalScore = groupStageScore + r32Score + advancementScore + r16Score + r16BonusScore + qfScore + qfBonusScore + sfScore + sfBonusScore + finalScore + fBonusScore + (includeTPScore ? thirdPlaceScore : 0) + winnerScore;
 
       // Check if ko_winner team is active
       let koWinnerActive: boolean | null = null;
