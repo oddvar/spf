@@ -46,6 +46,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
     let includeSFBonus = false;
     let includeFBonus = false;
     let includeTPScore = false;
+    let includeWinnerScore = false;
     let includeQFAndBelow = false;
 
     if (cutoffParam === 'all') {
@@ -56,6 +57,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       includeSFBonus = true;
       includeFBonus = true;
       includeTPScore = true;
+      includeWinnerScore = true;
       includeQFAndBelow = false;
     } else if (cutoffParam === 'all+r32+r16') {
       cutoff = null;
@@ -104,6 +106,17 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       includeSFBonus = true;
       includeFBonus = true;
       includeTPScore = true;
+      includeWinnerScore = false;
+      includeQFAndBelow = false;
+    } else if (cutoffParam === 'w+tp+f+sf+qf+r16+r32+group') {
+      cutoff = null;
+      includeKnockout = true;
+      includeR16Bonus = true;
+      includeQFBonus = true;
+      includeSFBonus = true;
+      includeFBonus = true;
+      includeTPScore = true;
+      includeWinnerScore = true;
       includeQFAndBelow = false;
     } else if (cutoffParam === '') {
       // Group only
@@ -210,7 +223,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       }
 
       // Winner
-      if (oddvarData.ko_winner) {
+      if (oddvarData.ko_winner && includeWinnerScore) {
         maxWinnerScore = 15;
       }
     }
@@ -282,7 +295,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
       }
     }
 
-    const totalMaxPossibleScore = maxGroupStageScore + maxR32Score + maxR16Score + maxR16BonusScore + maxQFScore + maxQFBonusScore + maxSFScore + maxSFBonusScore + maxFinalScore + maxFBonusScore + (includeTPScore ? maxThirdPlaceScore : 0) + maxWinnerScore;
+    const totalMaxPossibleScore = maxGroupStageScore + maxR32Score + maxR16Score + maxR16BonusScore + maxQFScore + maxQFBonusScore + maxSFScore + maxSFBonusScore + maxFinalScore + maxFBonusScore + (includeTPScore ? maxThirdPlaceScore : 0) + (includeWinnerScore ? maxWinnerScore : 0);
 
     const rankings: UserRanking[] = [];
 
@@ -514,7 +527,7 @@ router.get('/ranking', requireAuth, async (req: AuthRequest, res: Response) => {
         }
       }
 
-      const totalScore = groupStageScore + r32Score + advancementScore + r16Score + r16BonusScore + qfScore + qfBonusScore + sfScore + sfBonusScore + finalScore + fBonusScore + (includeTPScore ? thirdPlaceScore : 0) + winnerScore;
+      const totalScore = groupStageScore + r32Score + advancementScore + r16Score + r16BonusScore + qfScore + qfBonusScore + sfScore + sfBonusScore + finalScore + fBonusScore + (includeTPScore ? thirdPlaceScore : 0) + (includeWinnerScore ? winnerScore : 0);
 
       // Check if ko_winner team is active
       let koWinnerActive: boolean | null = null;
