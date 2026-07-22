@@ -95,6 +95,7 @@ export default function KnockoutPage() {
   const [oddvarSFMatchMap, setOddvarSFMatchMap] = useState<Map<string, number>>(new Map());
   const [oddvarFTeams, setOddvarFTeams] = useState<Set<string>>(new Set());
   const [oddvarFMatchMap, setOddvarFMatchMap] = useState<Map<string, number>>(new Map());
+  const [oddvarTPWinner, setOddvarTPWinner] = useState<string | null>(null);
 
   const updateSelectedUserId = (userId: string) => {
     setSelectedUserId(userId);
@@ -148,7 +149,7 @@ export default function KnockoutPage() {
         // Fetch selected user's knockout predictions
         setLoading(true);
         try {
-          const [ko, thirds, inactiveRes, r32Res, r16Res, qfRes, sfRes, fRes] = await Promise.all([
+          const [ko, thirds, inactiveRes, r32Res, r16Res, qfRes, sfRes, fRes, rankingRes] = await Promise.all([
             get<any>(`/users/${selectedUserId}/knockout`),
             get<{ selections: string[]; matches: GroupMatchFull[]; customOrders?: CustomOrders }>(`/users/${selectedUserId}/best-thirds`),
             get<{ inactiveTeams: string[] }>('/knockout/inactive-teams'),
@@ -157,6 +158,7 @@ export default function KnockoutPage() {
             get<any>('/knockout/oddvar-qf').catch(() => ({ qfPredictions: [] })),
             get<any>('/knockout/oddvar-sf').catch(() => ({ sfPredictions: [] })),
             get<any>('/knockout/oddvar-f').catch(() => ({ fPrediction: null })),
+            get<any>('/ranking').catch(() => ({ rankings: [] })),
           ]);
           setKoMatches(ko.r32Predictions);
           setInactiveTeams(new Set(inactiveRes.inactiveTeams.map(team => team.toLowerCase())));
@@ -209,6 +211,12 @@ export default function KnockoutPage() {
           setOddvarFTeams(f.teams);
           setOddvarFMatchMap(f.matchMap);
 
+          // Extract oddvar's ko_third_place_winner
+          if (rankingRes.rankings && rankingRes.rankings.length > 0) {
+            const oddvarRanking = rankingRes.rankings[rankingRes.rankings.length - 1];
+            setOddvarTPWinner(oddvarRanking.koWinner || null);
+          }
+
           setR16Preds(ko.r16Predictions);
           setQfPreds(ko.qfPredictions);
           setSfPreds(ko.sfPredictions);
@@ -228,7 +236,7 @@ export default function KnockoutPage() {
       } else {
         // Fetch own knockout predictions
         try {
-          const [ko, group, thirds, inactiveRes, r32Res, r16Res, qfRes, sfRes, fRes] = await Promise.all([
+          const [ko, group, thirds, inactiveRes, r32Res, r16Res, qfRes, sfRes, fRes, rankingRes] = await Promise.all([
             get<{ r32Predictions: KoMatch[]; canEdit: boolean; r16Predictions: (string | null)[]; qfPredictions: (string | null)[]; sfPredictions: (string | null)[]; fPredictions: (string | null)[]; thirdPrediction: string | null }>('/knockout/matches'),
             get<{ matches: GroupMatchFull[]; canEdit: boolean }>('/matches'),
             get<{ selections: string[] }>('/best-thirds'),
@@ -238,6 +246,7 @@ export default function KnockoutPage() {
             get<any>('/knockout/oddvar-qf').catch(() => ({ qfPredictions: [] })),
             get<any>('/knockout/oddvar-sf').catch(() => ({ sfPredictions: [] })),
             get<any>('/knockout/oddvar-f').catch(() => ({ fPrediction: null })),
+            get<any>('/ranking').catch(() => ({ rankings: [] })),
           ]);
           setKoMatches(ko.r32Predictions);
           setInactiveTeams(new Set(inactiveRes.inactiveTeams.map(team => team.toLowerCase())));
@@ -288,6 +297,12 @@ export default function KnockoutPage() {
           setOddvarSFMatchMap(sf.matchMap);
           setOddvarFTeams(f.teams);
           setOddvarFMatchMap(f.matchMap);
+
+          // Extract oddvar's ko_third_place_winner
+          if (rankingRes.rankings && rankingRes.rankings.length > 0) {
+            const oddvarRanking = rankingRes.rankings[rankingRes.rankings.length - 1];
+            setOddvarTPWinner(oddvarRanking.koWinner || null);
+          }
 
           setR16Preds(ko.r16Predictions);
           setQfPreds(ko.qfPredictions);
@@ -887,7 +902,7 @@ export default function KnockoutPage() {
                   onClick={tpEnabled ? () => predictThird('H') : undefined}
                 >
                   <span className="bracket-team-name" style={{
-                    textDecoration: (oddvarFTeams.has(home.toLowerCase()) || (inactiveTeams.has(home.toLowerCase()) && !oddvarSFTeams.has(home.toLowerCase()))) ? 'line-through' : 'none',
+                    textDecoration: (oddvarFTeams.has(home.toLowerCase()) || (inactiveTeams.has(home.toLowerCase()) && !oddvarSFTeams.has(home.toLowerCase())) || (oddvarTPWinner && oddvarTPWinner.toLowerCase() !== home.toLowerCase())) ? 'line-through' : 'none',
                     fontWeight: oddvarFTeams.has(home.toLowerCase()) ? 'bold' : 'normal',
                     fontStyle: 'normal',
                     fontSize: oddvarFTeams.has(home.toLowerCase()) ? '1.1em' : '1em',
@@ -899,7 +914,7 @@ export default function KnockoutPage() {
                   onClick={tpEnabled ? () => predictThird('A') : undefined}
                 >
                   <span className="bracket-team-name" style={{
-                    textDecoration: (oddvarFTeams.has(away.toLowerCase()) || (inactiveTeams.has(away.toLowerCase()) && !oddvarSFTeams.has(away.toLowerCase()))) ? 'line-through' : 'none',
+                    textDecoration: (oddvarFTeams.has(away.toLowerCase()) || (inactiveTeams.has(away.toLowerCase()) && !oddvarSFTeams.has(away.toLowerCase())) || (oddvarTPWinner && oddvarTPWinner.toLowerCase() !== away.toLowerCase())) ? 'line-through' : 'none',
                     fontWeight: oddvarFTeams.has(away.toLowerCase()) ? 'bold' : 'normal',
                     fontStyle: 'normal',
                     fontSize: oddvarFTeams.has(away.toLowerCase()) ? '1.1em' : '1em',
