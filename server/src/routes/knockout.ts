@@ -405,4 +405,24 @@ router.get('/knockout/oddvar-f', async (_req, res: Response) => {
   }
 });
 
+router.get('/knockout/oddvar-third-place-winner', async (_req, res: Response) => {
+  try {
+    const [userRows] = await pool.execute(
+      'SELECT ko_third_place_winner FROM users WHERE email = ?',
+      ['oddvar@geheb.com'],
+    );
+
+    const user = (userRows as any[])[0];
+    if (!user) {
+      res.status(404).json({ error: 'Oddvar user not found' });
+      return;
+    }
+
+    res.json({ thirdPlaceWinner: user.ko_third_place_winner || null });
+  } catch (err) {
+    console.error('Error fetching oddvar third place winner:', err);
+    res.status(500).json({ error: 'Failed to fetch oddvar third place winner' });
+  }
+});
+
 export default router;
